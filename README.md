@@ -1,4 +1,5 @@
 # cpdk
 Control Plane Development Kit
 
-Because nobody likes coding schemas.
+Nobody likes coding schemas.
+
