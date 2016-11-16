@@ -1,5 +1,10 @@
-from cpdk_types import CPDKModel, IntegerType
+from cpdk_db import CPDKModel, IntegerType
+from sqlalchemy import Integer, Column
 
 
-class MyModel(CPDKModel):
+class Server(CPDKModel):
     myVal = IntegerType()
+    something = Column(Integer)
+
+class VirtualServer(CPDKModel):
+    pass

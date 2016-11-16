@@ -1,3 +1,5 @@
+# Show extra logging?
+DEBUG = True
 
 # What is the underlying database? (postgres, mysql, sqlite)
 DB_TYPE = 'sqlite'
