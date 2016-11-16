@@ -11,10 +11,10 @@ from cpdk_db import create_db, import_user_models
 
 def syncdb():
 
-    for model in import_user_models():
-        print model
+    # Import all of the user models
+    import_user_models()
 
-
+    # Create the database
     create_db()
 
 

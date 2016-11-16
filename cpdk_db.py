@@ -2,64 +2,48 @@
 These are the base types for CPDK models.
 """
 import os
+import cmd
 import settings
 from os import walk
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
 
-class CPDKModel(object):
+class CPDKModel(cmd.Cmd):
 
+    intro = None
+    file = None
+
+    def enter_mode(self):
+        self.cmdloop()
+
+    def do_exit(self, _):
+        return True
+
+    """
+    This is the base class for all user defined object models
+    """
     @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
 
     id = Column(Integer, primary_key=True)
 
-    def write_db_schema(self):
-
-        # Loop through all of the BaseType members of the derived class and export them
-        for var in self.__class__.__dict__:
-
-            # Skip over builtins
-            if var.startswith('__'):
-                continue
-            attr = self.__class__.__dict__[var]
-            if issubclass(attr.__class__,  BaseType):
-                attr.write_db_schema()
-
-
-class BaseType(object):
-    def write_db_schema(self):
-        pass
-
-
-class IntegerType(BaseType):
-    val = Column(Integer)
-
-    def write_db_schema(self):
-        print "Integer Type"
-
-
-class DecimalType(BaseType):
-
-    def write_db_schema(self):
-        print "Decimal Type"
-
-
-class StringType(BaseType):
-    val = Column(String)
-
-    def write_db_schema(self):
-        print "String Type"
+# Needed for mixing in with the stock SQLAlchemy base model
+CPDKModel = declarative_base(cls=CPDKModel)
 
 
 def import_user_models():
+    """
+    Import all of the user defined models within settings.MODELS_DIR
+    :return: A list of instantiated objects with base type of CPDKModel
+    """
     models = []
 
-    # Walk through and import
+    # Walk through and import python modules
+    # TODO: This should be more selective
     for (dirpath, dirnames, filenames) in walk(settings.MODELS_DIR):
         for f in filenames:
 
@@ -71,9 +55,10 @@ def import_user_models():
             f = f.replace('.py', '')
             module_path = os.path.join(dirpath, f).replace(os.path.sep, '.')
 
-            # Import the module and find all the CPDKModel classes
-            module = __import__(module_path)
+            # Import the module
+            __import__(module_path)
 
+    # Instantiate all of the classes which have a base type of CPDKModel
     all_my_base_classes = {cls.__name__: cls for cls in CPDKModel.__subclasses__()}
 
     for class_name in all_my_base_classes:
@@ -82,10 +67,11 @@ def import_user_models():
 
     return models
 
-CPDKModel = declarative_base(cls=CPDKModel)
-
 
 def create_db():
+    """
+    Lay down the databse schema based on the CPDKModels which have been defined.
+    :return: None
+    """
     engine = create_engine('sqlite:///' + settings.DB_NAME, echo=settings.DEBUG)
-    base = CPDKModel()
-    base.metadata.create_all(bind=engine)
+    CPDKModel().metadata.create_all(bind=engine)

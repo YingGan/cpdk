@@ -10,3 +10,5 @@ DB_NAME = 'cpdk.db'
 # Name of the directory to parse for models
 MODELS_DIR = 'models'
 
+# The port for ZMQ to listen/publish on
+ZMQ_PORT = 6990
