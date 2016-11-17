@@ -2,7 +2,6 @@
 These are the base types for CPDK models.
 """
 import os
-import cmd
 import settings
 from os import walk
 from sqlalchemy import Column, Integer
@@ -11,16 +10,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
 
-class CPDKModel(cmd.Cmd):
+class CPDKModel(object):
 
     intro = None
     file = None
 
-    def enter_mode(self):
-        self.cmdloop()
-
-    def do_exit(self, _):
-        return True
+    def __init__(self):
+        print "in init"
+        super(CPDKModel, self).__init__()
 
     """
     This is the base class for all user defined object models
@@ -54,7 +51,6 @@ def import_user_models():
             # Change from a file system path to a dotted module path (remove .py)
             f = f.replace('.py', '')
             module_path = os.path.join(dirpath, f).replace(os.path.sep, '.')
-
             # Import the module
             __import__(module_path)
 
