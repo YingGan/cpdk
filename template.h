@@ -19,8 +19,8 @@ public:
     void Cleanup(void);
     void ProcessMessageQueue(void);
 
-    static {{ TEMPLATE }} & GetInstance() {
-        static {{ TEMPLATE }} s_Instance;
+    static {{ TEMPLATE }}Mgr & GetInstance() {
+        static {{ TEMPLATE }}Mgr s_Instance;
         return s_Instance;
     }
 
@@ -29,12 +29,12 @@ private:
     void * m_ZMQContext;
 
     // Constructors (hidden for singleton-only access)
-    {{ TEMPLATE }}();
-    {{ TEMPLATE }}({{ TEMPLATE }}) const &);
-    void operator=({{ TEMPLATE }} const&);
+    {{ TEMPLATE }}Mgr() {};
+    {{ TEMPLATE }}Mgr({{ TEMPLATE }}Mgr const &);
+    void operator=({{ TEMPLATE }}Mgr const&);
 };
 
-void {{ TEMPLATE }}::Init(void) {
+void {{ TEMPLATE }}Mgr::Init(void) {
     m_ZMQContext = zmq_ctx_new();
     m_ZMQSocket = zmq_socket(m_ZMQContext, ZMQ_SUB);
 
@@ -42,14 +42,14 @@ void {{ TEMPLATE }}::Init(void) {
     zmq_setsockopt(m_ZMQSocket, ZMQ_SUBSCRIBE, "{{ TEMPLATE }}", strlen("{{ TEMPLATE }}"));
 
     zmq_connect(m_ZMQSocket, "tcp://localhost:{{ ZMQ_SHELL_PORT }}");
-} // end of {{ TEMPLATE }}::Init()
+} // end of {{ TEMPLATE }}Mgr::Init()
 
-void {{ TEMPLATE }}::Cleanup(void) {
+void {{ TEMPLATE }}Mgr::Cleanup(void) {
     zmq_close(m_ZMQSocket);
     zmq_ctx_destroy(m_ZMQContext);
-} // end of {{ TEMPLATE }}::Cleanup()
+} // end of {{ TEMPLATE }}Mgr::Cleanup()
 
-void {{ TEMPLATE }}::ProcessZMQ(void) {
+void {{ TEMPLATE }}Mgr::ProcessMessageQueue(void) {
     zmq_msg_t msg;
     zmq_msg_init(&msg);
 
@@ -59,10 +59,10 @@ void {{ TEMPLATE }}::ProcessZMQ(void) {
     msgpack::object_handle h = msgpack::unpack((char *)zmq_msg_data(&msg), zmq_msg_size(&msg));
     msgpack::object deserialized = h.get();
     msgpack::type::tuple<int, std::string> cmd;
-    deserielized.convert(cmd);
+    deserialized.convert(cmd);
 
     int msgType = std::get<0>(cmd);
-    std::string objName = std::get<1><cmd);
+    std::string objName = std::get<1>(cmd);
     switch(msgType) {
         case MSG_TYPE_CREATE: {
             printf("Create {{ TEMPLATE }} %s\n", objName.c_str());
@@ -80,7 +80,7 @@ void {{ TEMPLATE }}::ProcessZMQ(void) {
         default:
         throw "Unknown message type";
     }
-} // end of {{ TEMPLATE }}::ProcessZMQ()
+} // end of {{ TEMPLATE }}Mgr::ProcessMessageQueue()
 
 class {{ TEMPLATE }} {
 
