@@ -11,6 +11,8 @@ DB_NAME = 'cpdk.db'
 MODELS_DIR = 'models'
 
 SHELL_SCHEMA_FILE = 'redshell_schema.py'
+SHELL_LOGIN_BANNER = 'Welcome To RedShell!'
+SHELL_GLOBAL_MODE_NAME = 'Global'
 
-# The port for ZMQ to listen/publish on
-ZMQ_PORT = 6990
+# The port for ZMQ to server/clients to work on for the CLI
+ZMQ_SHELL_PORT = 6990
