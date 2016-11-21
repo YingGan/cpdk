@@ -10,6 +10,11 @@ DB_NAME = 'cpdk.db'
 # Name of the directory to parse for models
 MODELS_DIR = 'models'
 
+# Path to export C source files to
+C_SRC_DIR = 'c_src'
+C_TEMPLATE_FILE = 'template.h'
+
+# Shell settings
 SHELL_SCHEMA_FILE = 'redshell_schema.py'
 SHELL_LOGIN_BANNER = 'Welcome To RedShell!'
 SHELL_GLOBAL_MODE_NAME = 'Global'

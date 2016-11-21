@@ -54,7 +54,7 @@ def process_msg(msg):
     Process an incoming message.
     :param msg: The message, as received from the ZMQ socket
     Expected format is a Python dictionary with the following members:
-        t - The type of message (get_or_create | get | create | modify | delete | list)
+        t - The type of message (get_or_create | get | create | modify | delete | list | add_ref | del_ref)
         o - The class of object being worked on
         on - The name of the object instance being worked on (optional for list commands only)
         (optional) f - Name of the field for the object
@@ -125,7 +125,10 @@ def process_msg(msg):
             response['status'] = 'error'
             response['message'] = '%s %s not found' % (model.__class__, model.__class__.name)
 
-    elif msg['t'] == 'add':     # Add a reference to another object
+    elif msg['t'] == 'add_ref':     # Add a reference to another object
+        # TODO: Write this
+        pass
+    elif msg['t'] == 'del_ref':     # Delete an object reference
         # TODO: Write this
         pass
     else:

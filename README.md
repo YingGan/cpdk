@@ -11,6 +11,7 @@ Nobody likes coding schemas.
 - [ ] CLI: Tab completion for delete commands
 - [ ] CLI: Type verification
 - [ ] CLI: Support for boolean parameters
+- [ ] CLI: Support for non-db commands (arp cache, intefaces, etc)
 - [ ] CLI: Use cmd2 module and add support for color!
 - [ ] CPP: Generate CPP/H files for models
 - [ ] CPDKd: Process daemon notifications
