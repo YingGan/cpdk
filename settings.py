@@ -21,3 +21,5 @@ SHELL_GLOBAL_MODE_NAME = 'Global'
 
 # The port for ZMQ to server/clients to work on for the CLI
 ZMQ_SHELL_PORT = 6990
+ZMQ_PUBSUB_PORT = 5744
+

@@ -5,6 +5,7 @@ Nobody likes coding schemas.
 
 ## Major Development Tasks for 1.0
 - [x] DB: Recurse through models and create schema using sqlalchemy
+- [ ] DB: Schema Migrations (update, roll-back, etc)
 - [x] CLI: Recurse through models and generate classes for cmd.Cmd
 - [x] CLI: Create RedShell daemon & process CLI commands
 - [ ] CLI: Tab completion for show commands
@@ -16,3 +17,4 @@ Nobody likes coding schemas.
 - [ ] CPP: Generate CPP/H files for models
 - [ ] CPDKd: Process daemon notifications
 - [ ] CPDKd: Handle initial load requests from daemons
+- [ ] Support for message versions

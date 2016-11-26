@@ -35,11 +35,14 @@ def build_cpp():
         fh = open(os.path.abspath(settings.C_SRC_DIR) + os.path.sep + model + '.h', 'w')
         template = original_template
 
-        # Replace {{ TEMPLATE }} with the class name
-        template = template.replace('{{ TEMPLATE }}', model)
+        # Replace {{ TEMPLATE_BASE }} with the class name
+        template = template.replace('{{ TEMPLATE_BASE }}', model)
+
+        # Replace {{ TEMPLATE_MGR }} with the class name plus a "Mgr" suffix
+        template = template.replace('{{ TEMPLATE_MGR }}', model + 'Mgr')
 
         # Fill in the desired ZMQ PUB-SUB port
-        template = template.replace('{{ ZMQ_SHELL_PORT }}', str(settings.ZMQ_SHELL_PORT))
+        template = template.replace('{{ ZMQ_PUBSUB_PORT }}', str(settings.ZMQ_PUBSUB_PORT))
 
         # Write the file to disk
         fh.write(template)

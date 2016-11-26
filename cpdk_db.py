@@ -5,10 +5,12 @@ import os
 import sys
 import settings
 from os import walk
+
 from sqlalchemy import Column, Integer, Text
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import clear_mappers
 
 
 class CPDKModel(object):
@@ -73,6 +75,9 @@ def unimport_user_modules(models):
     :return: None
     """
 
+    clear_mappers()
+    CPDKModel().metadata.clear()
+
     while len(models):
         k = models.keys()[0]
         del models[k]
@@ -87,7 +92,13 @@ def unimport_user_modules(models):
             # Change from a file system path to a dotted module path (remove .py)
             f = f.replace('.py', '')
             module_path = os.path.join(dirpath, f).replace(os.path.sep, '.')
+            print 'deleting %s' % module_path
             del sys.modules[module_path]
+            del module_path
+
+    all_my_base_classes = {cls.__name__: cls for cls in CPDKModel.__subclasses__()}
+    for class_name in all_my_base_classes:
+        print class_name
 
 
 def create_db():

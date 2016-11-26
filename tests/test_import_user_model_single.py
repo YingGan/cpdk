@@ -1,6 +1,6 @@
 import settings
 from unittest import TestCase
-from cpdk_db import import_user_models
+from cpdk_db import import_user_models, unimport_user_modules
 
 
 class TestCPDKModelSingle(TestCase):
@@ -28,3 +28,5 @@ class TestCPDKModelSingle(TestCase):
         # Verify that all the attributes of TestModel are present
         for member in ['string', 'integer', 'boolean', 'floating_point']:
             self.assertIn(member, dir(models['TestModel']))
+
+        unimport_user_modules(models)

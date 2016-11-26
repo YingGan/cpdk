@@ -8,6 +8,7 @@ import signal
 import logging
 import settings
 import argparse
+import umsgpack
 from cpdk_db import import_user_models
 
 from sqlalchemy import create_engine
@@ -19,6 +20,13 @@ is_running = True
 engine = create_engine('sqlite:///' + settings.DB_NAME, echo=settings.DEBUG)
 Session = sessionmaker(bind=engine)
 user_models = None
+
+# Command IDs for the PUB-SUB channel
+CMD_ID_CREATE = 1
+CMD_ID_DELETE = 2
+CMD_ID_MODIFY = 3
+CMD_ID_ADDREF = 4
+CMD_ID_DELREF = 5
 
 
 def signal_handler(sig, frame):
@@ -35,7 +43,20 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def setup_zmq():
+def setup_pubsub_zmq():
+    """
+    Create a Zero Message Queue publisher
+    :return: The zmq socket object
+    """
+    context = zmq.Context()
+    zmq_socket = context.socket(zmq.PUB)
+    zmq_listen_addr = "tcp://*:" + str(settings.ZMQ_PUBSUB_PORT)
+    logging.info('Starting ZMQ PubSub server on %s' % zmq_listen_addr)
+    zmq_socket.bind(zmq_listen_addr)
+    return zmq_socket
+
+
+def setup_cli_zmq():
     """
     Create a Zero Message Queue server and start listening on the designated port
     :return: The zmq socket object
@@ -44,15 +65,16 @@ def setup_zmq():
     zmq_socket = context.socket(zmq.REP)
     zmq_listen_addr = "tcp://*:" + str(settings.ZMQ_SHELL_PORT)
 
-    logging.info('Starting ZMQ server on %s' % zmq_listen_addr)
+    logging.info('Starting ZMQ CLI server on %s' % zmq_listen_addr)
     zmq_socket.bind(zmq_listen_addr)
     return zmq_socket
 
 
-def process_msg(msg):
+def process_msg(msg, zmq_pub_socket):
     """
     Process an incoming message.
     :param msg: The message, as received from the ZMQ socket
+    :param zmq_pub_socket: The ZMQ socket to be used for PUBLISH messages
     Expected format is a Python dictionary with the following members:
         t - The type of message (get_or_create | get | create | modify | delete | list | add_ref | del_ref)
         o - The class of object being worked on
@@ -79,6 +101,9 @@ def process_msg(msg):
             response['result'] = 'created'
             response['id'] = new_model.id
 
+            # Send out the PUB-SUB message
+            zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_CREATE, 'obj': msg['on']}])
+
     elif msg['t'] == 'get':     # Get an object
         # TODO: Write this
         pass
@@ -91,8 +116,12 @@ def process_msg(msg):
             if q_result.count() is 0:
                 response['status'] = 'error'
                 response['message'] = '%s %s not found' % (model.__class__.__name__, msg['on'])
-            q_result.delete()
-            session.commit()
+            else:
+                q_result.delete()
+                session.commit()
+                # Send out the PUB-SUB message
+                zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_DELETE, 'obj': msg['on']}])
+
         except NoResultFound:
             response['status'] = 'error'
             response['message'] = '%s %s not found' % (model.__class__.__name__, msg['on'])
@@ -153,14 +182,17 @@ def main():
     # Import the database schema
     user_models = import_user_models()
 
-    # Setup the ZeroMQ socket
-    zmq_socket = setup_zmq()
+    # Setup the ZeroMQ socket for the CLI daemon
+    zmq_cli_socket = setup_cli_zmq()
+
+    # Setup the socket to be used for PUB-SUB channels
+    zmq_pub_socket = setup_pubsub_zmq()
 
     # Start the message loop
     while is_running:
         try:
-            msg = zmq_socket.recv_pyobj(flags=zmq.NOBLOCK)
-            zmq_socket.send_pyobj(process_msg(msg))
+            msg = zmq_cli_socket.recv_pyobj(flags=zmq.NOBLOCK)
+            zmq_cli_socket.send_pyobj(process_msg(msg, zmq_pub_socket))
         except zmq.ZMQError, e:
             if e.errno == zmq.EAGAIN:
                 # TODO: Sleep a little bit here?

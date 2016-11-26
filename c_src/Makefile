@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-c -Wall -std=c++11 -g
-CFLAGS += -I/usr/local/include -I./msgpack/include -I./zeromq
+CFLAGS += -I/usr/local/include
 LDFLAGS = -lzmq
 SOURCES=main.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
