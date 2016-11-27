@@ -8,7 +8,6 @@ import signal
 import logging
 import settings
 import argparse
-import umsgpack
 from cpdk_db import import_user_models
 
 from sqlalchemy import create_engine
@@ -56,6 +55,19 @@ def setup_pubsub_zmq():
     return zmq_socket
 
 
+def setup_conf_pull_zmq():
+    """
+    Create a Zero Message Queue socket that clients can pull their config from
+    :return: The zmq socket object
+    """
+    context = zmq.Context()
+    zmq_socket = context.socket(zmq.REP)
+    zmq_listen_addr = "tcp://*:" + str(settings.ZMQ_CLIENT_SERVER_PORT)
+    logging.info('Starting ZMQ conf pull server on %s' % zmq_listen_addr)
+    zmq_socket.bind(zmq_listen_addr)
+    return zmq_socket
+
+
 def setup_cli_zmq():
     """
     Create a Zero Message Queue server and start listening on the designated port
@@ -70,17 +82,45 @@ def setup_cli_zmq():
     return zmq_socket
 
 
-def process_msg(msg, zmq_pub_socket):
+def process_client_msg(msg):
     """
-    Process an incoming message.
+    Process a unicast client request message
+    :param msg: Message dictionary.
+        Currently only contains one member: 'object'. This is the table name to query.
+    :return: A python dictionary containing dictionaries of each object found
+    """
+    response = {}
+
+    model = user_models[msg['object']]
+    session = Session()
+    q_result = session.query(model.__class__).all()
+
+    for r in q_result:
+        entry = {}
+        for column in r.__table__.columns:
+
+            # Skip over these special fields
+            if column.name == 'name' or column.name == 'id':
+                continue
+
+            entry[column.name] = getattr(r, column.name)
+
+        response[r.name] = entry
+
+    return response
+
+
+def process_cli_msg(msg, zmq_pub_socket):
+    """
+    Process an incoming CLI message.
     :param msg: The message, as received from the ZMQ socket
-    :param zmq_pub_socket: The ZMQ socket to be used for PUBLISH messages
     Expected format is a Python dictionary with the following members:
         t - The type of message (get_or_create | get | create | modify | delete | list | add_ref | del_ref)
         o - The class of object being worked on
         on - The name of the object instance being worked on (optional for list commands only)
         (optional) f - Name of the field for the object
         (optional) fv - Value for the field
+    :param zmq_pub_socket: The ZMQ socket to be used for PUBLISH messages
     :return: The response to be sent to the client
     """
     response = {'status': 'ok'}
@@ -141,7 +181,6 @@ def process_msg(msg, zmq_pub_socket):
         except NoResultFound:
             response['status'] = 'error'
             response['message'] = '%s %s not found' % (model.__class__.__name__, model.__class__.name)
-        print response
 
     elif msg['t'] == 'modify':  # Modify a field
 
@@ -149,6 +188,13 @@ def process_msg(msg, zmq_pub_socket):
             q_result = session.query(model.__class__).filter(model.__class__.name == msg['on']).one()
             setattr(q_result, msg['f'], msg['fv'])
             session.commit()
+
+            # Send out the PUB-SUB message
+            print("getattr: %i" % getattr(q_result, msg['f']))
+            zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_MODIFY,
+                                                                 'obj': msg['on'],
+                                                                 'field': msg['f'],
+                                                                 'value': getattr(q_result, msg['f'])}])
 
         except NoResultFound:
             response['status'] = 'error'
@@ -188,14 +234,28 @@ def main():
     # Setup the socket to be used for PUB-SUB channels
     zmq_pub_socket = setup_pubsub_zmq()
 
+    # Setup the socket to be used for
+    zmq_conf_pull_socket = setup_conf_pull_zmq()
+
     # Start the message loop
     while is_running:
         try:
+            # Process CLI events
             msg = zmq_cli_socket.recv_pyobj(flags=zmq.NOBLOCK)
-            zmq_cli_socket.send_pyobj(process_msg(msg, zmq_pub_socket))
+            zmq_cli_socket.send_pyobj(process_cli_msg(msg, zmq_pub_socket))
         except zmq.ZMQError, e:
             if e.errno == zmq.EAGAIN:
-                # TODO: Sleep a little bit here?
-                continue
+                pass
+
+        try:
+            # Process any direct client requests
+            msg = zmq_conf_pull_socket.recv_json(flags=zmq.NOBLOCK)
+            zmq_conf_pull_socket.send_json(process_client_msg(msg))
+        except zmq.ZMQError, e:
+            if e.errno == zmq.EAGAIN:
+                pass
+
+        # TODO: Sleep a little bit here to save the poor CPU?
+
 if __name__ == '__main__':
     main()

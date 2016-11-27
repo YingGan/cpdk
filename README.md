@@ -14,7 +14,7 @@ Nobody likes coding schemas.
 - [ ] CLI: Support for boolean parameters
 - [ ] CLI: Support for non-db commands (arp cache, intefaces, etc)
 - [ ] CLI: Use cmd2 module and add support for color!
-- [ ] CPP: Generate CPP/H files for models
+- [x] CPP: Generate C++ header files for models
 - [ ] CPDKd: Process daemon notifications
-- [ ] CPDKd: Handle initial load requests from daemons
+- [x] CPDKd: Handle initial load requests from daemons
 - [ ] Support for message versions

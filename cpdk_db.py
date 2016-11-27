@@ -19,7 +19,6 @@ class CPDKModel(object):
     file = None
 
     def __init__(self):
-        print "in init"
         super(CPDKModel, self).__init__()
 
     """

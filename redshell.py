@@ -4,6 +4,7 @@ import zmq                      # Zero Message Queue
 import inspect                  # Because, let's be honest, meta programming is cool
 import settings                 # Hard-coding is for chumps
 from cpdk_db import CPDKModel
+import sqlalchemy
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 # This has to be global as it will be accessed by classes in the schema
@@ -128,9 +129,10 @@ class CLIParseField(object):
     """
     name = ""
 
-    def __init__(self, name, parent_cmd):
+    def __init__(self, name, parent_cmd, obj_type):
         self.name = name
         self.parent_cmd = parent_cmd
+        self.obj_type = obj_type
 
     def build_cli(self, fh):
         """
@@ -139,10 +141,31 @@ class CLIParseField(object):
         :return: None
         """
         output = '\n'
-        output += '    def do_%s(self, arg):\n' % self.name
-        output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": arg})\n' % (self.parent_cmd.name, self.name)
-        output += '        s = Global.zmq_socket.recv_pyobj()\n'
-        output += '        print s\n'
+
+        # Special case for booleans
+        if self.obj_type == sqlalchemy.types.Boolean:
+            # The affirmative version of the command
+            output += '    def do_%s(self, arg):\n' % self.name
+            output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": True})\n' % (
+            self.parent_cmd.name, self.name)
+            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        if s["status"] != "ok":\n';
+            output += '            print s["status"]\n'
+            output += '\n'
+
+            # The "disable" command
+            output += '    def do_no_%s(self, arg):\n' % self.name
+            output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": False})\n' % (
+                self.parent_cmd.name, self.name)
+            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        if s["status"] != "ok":\n';
+            output += '            print s["status"]\n'
+        else:
+            output += '    def do_%s(self, arg):\n' % self.name
+            output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": arg})\n' % (self.parent_cmd.name, self.name)
+            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        if s["status"] != "ok":\n';
+            output += '            print s["status"]\n'
         fh.write(output)
 
 
@@ -179,9 +202,10 @@ def build_cli_recurse(parent_dir, parent_mode):
                     # Import all the database attributes
                     for member_name, member_object in inspect.getmembers(o):
 
-                        # Never import a member named "id" as that's an internal-only attribute
+                        # Never import a member named "id" or "name" as that's an internal-only attribute
                         if type(member_object) == InstrumentedAttribute and member_name != 'id' and member_name != 'name':
-                            field = CLIParseField(name=member_name, parent_cmd=new_cmd)
+                            obj_type = getattr(o.__table__.columns, member_name).type
+                            field = CLIParseField(name=member_name, parent_cmd=new_cmd, obj_type=type(obj_type))
                             new_cmd.add_field(field)
 
         elif os.path.isdir(full_path):
