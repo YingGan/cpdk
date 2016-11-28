@@ -15,6 +15,14 @@ class Interface(CPDKModel):
 class Server(CPDKModel):
     something = Column(Integer)
 
+    def __str__(self):
+
+        output = '%s\n' % self.name
+        output += '===================\n'
+        if self.something:
+            output += 'something: %d\n' % self.something
+        return output
+
 
 class VirtualServer(CPDKModel):
     address = Column(String)

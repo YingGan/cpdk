@@ -3,7 +3,7 @@ import os
 import zmq                      # Zero Message Queue
 import inspect                  # Because, let's be honest, meta programming is cool
 import settings                 # Hard-coding is for chumps
-from cpdk_db import CPDKModel
+from cpdk_db import CPDKModel, import_user_models
 import sqlalchemy
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
@@ -56,7 +56,9 @@ class CLIParseMode(object):
         output = '\n'
         output += 'class %s(BaseCmd):\n' % self.name
         output += '    prompt = "%s>"\n' % self.name
-        output += '    zmq_socket = None\n'
+        if self.name == 'Global':
+            output += '    zmq_socket = None\n'
+            output += '    models = None\n'
 
         # Add mode accessors for any commands in this mode
         for command in self.child_commands:
@@ -258,7 +260,9 @@ class BaseCmd(cmd.Cmd):
         base_def += '                print reply["message"]\n'
         base_def += '                return\n'
         base_def += '            for r in reply["result"]:\n'
-        base_def += '                print str(r)\n'
+        # Instantiate a temporary instance of the model and print its contents
+        base_def += '                init_data = json.loads(r)\n'
+        base_def += '                print str(Global.models["%s"].__class__(**init_data))\n' % command.name
         base_def += '\n'
 
     # Walk through the command tree and create global 'delete' commands for each CLI command
@@ -297,7 +301,7 @@ def build_cli():
     # Write out the schema that cmd.Cmd can use when RedShell is invoked as a daemon
     fh = open(settings.SHELL_SCHEMA_FILE, mode='w')
     fh.write('import cmd\n')    # TODO: Upgrade to cmd2 to get more features?
-    fh.write('import zmq\n')
+    fh.write('import json\n')
     fh.write('\n')
 
     # Write out the base class that every command/mode will inherit
@@ -316,11 +320,13 @@ def start_shell():
     zmq_socket = context.socket(zmq.REQ)
     zmq_socket.connect("tcp://localhost:" + str(settings.ZMQ_SHELL_PORT))
 
+    # Import the schema and place all the objects in the global namespace
     module = __import__(settings.SHELL_SCHEMA_FILE.replace('.py', ''), globals(), locals(), ['*'])
     for k in dir(module):
         globals()[k] = getattr(module, k)
 
     Global.zmq_socket = zmq_socket
+    Global.models = import_user_models()
     Global().cmdloop(intro=settings.SHELL_LOGIN_BANNER)
 
 

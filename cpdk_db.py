@@ -40,6 +40,20 @@ class CPDKModel(object):
 
         return json.dumps(json_data)
 
+    def __str__(self):
+        """
+        Render a string representation of the model. Will display all columns.
+        :return: A string representation of the model
+        """
+        output = '%s\n' % self.name
+        output += '===================\n'
+        for column in self.__table__.columns:
+            val = getattr(self, column.name)
+            if val:
+                output += '%s: %s\n' % (column.name, val)
+
+        return output
+
     id = Column(Integer, primary_key=True)
     name = Column(Text)
 
