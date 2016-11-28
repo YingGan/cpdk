@@ -3,6 +3,7 @@ These are the base types for CPDK models.
 """
 import os
 import sys
+import json
 import settings
 from os import walk
 
@@ -27,6 +28,17 @@ class CPDKModel(object):
     @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
+
+    def serialize_to_json(self):
+        """
+        Export all columns to JSON
+        :return: A JSON-formatted string containing the model's data
+        """
+        json_data = {}
+        for column in self.__class__.__table__.columns:
+            json_data[column.name] = getattr(self, column.name)
+
+        return json.dumps(json_data)
 
     id = Column(Integer, primary_key=True)
     name = Column(Text)

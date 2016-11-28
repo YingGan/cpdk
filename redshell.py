@@ -63,8 +63,8 @@ class CLIParseMode(object):
             output += '\n'
             output += '    def do_%s(self, arg):\n' % command.name
             output += '        mode = %s()\n' % command.name
-            output += '        Global.zmq_socket.send_pyobj({"t": "get_or_create", "o": "%s", "on": arg})\n' % command.name
-            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        Global.zmq_socket.send_json({"t": "get_or_create", "o": "%s", "on": arg})\n' % command.name
+            output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        mode.name = arg\n'
             output += '        mode.prompt = "%s-" + arg + ">"\n' % command.name
             output += '        mode.cmdloop()\n'
@@ -146,24 +146,24 @@ class CLIParseField(object):
         if self.obj_type == sqlalchemy.types.Boolean:
             # The affirmative version of the command
             output += '    def do_%s(self, arg):\n' % self.name
-            output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": True})\n' % (
+            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": True})\n' % (
             self.parent_cmd.name, self.name)
-            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        if s["status"] != "ok":\n';
             output += '            print s["status"]\n'
             output += '\n'
 
             # The "disable" command
             output += '    def do_no_%s(self, arg):\n' % self.name
-            output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": False})\n' % (
+            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": False})\n' % (
                 self.parent_cmd.name, self.name)
-            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        if s["status"] != "ok":\n';
             output += '            print s["status"]\n'
         else:
             output += '    def do_%s(self, arg):\n' % self.name
-            output += '        Global.zmq_socket.send_pyobj({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": arg})\n' % (self.parent_cmd.name, self.name)
-            output += '        s = Global.zmq_socket.recv_pyobj()\n'
+            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": arg})\n' % (self.parent_cmd.name, self.name)
+            output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        if s["status"] != "ok":\n';
             output += '            print s["status"]\n'
         fh.write(output)
@@ -252,8 +252,8 @@ class BaseCmd(cmd.Cmd):
         base_def += '                zmq_cmd = {"t": "list", "o": "%s"}\n' % command.name
         base_def += '            elif len(arg_list) == 2:\n'
         base_def += '                zmq_cmd = {"t": "list", "o": "%s", "on": arg_list[1]}\n' % command.name
-        base_def += '            Global.zmq_socket.send_pyobj(zmq_cmd)\n'
-        base_def += '            reply = Global.zmq_socket.recv_pyobj()\n'
+        base_def += '            Global.zmq_socket.send_json(zmq_cmd)\n'
+        base_def += '            reply = Global.zmq_socket.recv_json()\n'
         base_def += '            if reply["status"] != "ok":\n'
         base_def += '                print reply["message"]\n'
         base_def += '                return\n'
@@ -272,8 +272,8 @@ class BaseCmd(cmd.Cmd):
     base_def += '\n'
     for command in child_commands:
         base_def += '        elif arg_list[0] == "%s":\n' % command.name
-        base_def += '            Global.zmq_socket.send_pyobj({"t": "delete", "o": "%s", "on": arg_list[1]})\n' % command.name
-        base_def += '            reply = Global.zmq_socket.recv_pyobj()\n'
+        base_def += '            Global.zmq_socket.send_json({"t": "delete", "o": "%s", "on": arg_list[1]})\n' % command.name
+        base_def += '            reply = Global.zmq_socket.recv_json()\n'
         base_def += '            if reply["status"] != "ok":\n'
         base_def += '                print reply["message"]\n'
         base_def += '                return\n'

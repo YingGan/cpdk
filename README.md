@@ -18,3 +18,7 @@ Nobody likes coding schemas.
 - [ ] CPDKd: Process daemon notifications
 - [x] CPDKd: Handle initial load requests from daemons
 - [ ] Support for message versions
+- [ ] REST API
+
+## Testing Tasks
+- [ ] Redshell unit tests (create, delete, list, modify)

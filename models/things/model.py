@@ -1,5 +1,15 @@
 from cpdk_db import CPDKModel
-from sqlalchemy import Integer, Column, String, Boolean
+from sqlalchemy import Integer, Column, String, Boolean, BigInteger
+
+
+class Interface(CPDKModel):
+    enabled = Column(Boolean)
+    packets_out = Column(BigInteger,
+                         info={'display_only': True})  # No CLI command will be generated
+    packets_in = Column(BigInteger,
+                        info={'display_only': True})    # No CLI command will be generated
+
+    daemon_manged = True  # This model can only be created/deleted by daemons
 
 
 class Server(CPDKModel):

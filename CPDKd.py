@@ -114,7 +114,7 @@ def process_cli_msg(msg, zmq_pub_socket):
     """
     Process an incoming CLI message.
     :param msg: The message, as received from the ZMQ socket
-    Expected format is a Python dictionary with the following members:
+    Expected format is a JSON object with the following members:
         t - The type of message (get_or_create | get | create | modify | delete | list | add_ref | del_ref)
         o - The class of object being worked on
         on - The name of the object instance being worked on (optional for list commands only)
@@ -176,7 +176,10 @@ def process_cli_msg(msg, zmq_pub_socket):
             else:
                 q_result = session.query(model.__class__).all()
 
-            response['result'] = q_result
+            response['result'] = []
+
+            for obj in q_result:
+                response['result'].append(obj.serialize_to_json())
 
         except NoResultFound:
             response['status'] = 'error'
@@ -190,7 +193,6 @@ def process_cli_msg(msg, zmq_pub_socket):
             session.commit()
 
             # Send out the PUB-SUB message
-            print("getattr: %i" % getattr(q_result, msg['f']))
             zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_MODIFY,
                                                                  'obj': msg['on'],
                                                                  'field': msg['f'],
@@ -241,8 +243,9 @@ def main():
     while is_running:
         try:
             # Process CLI events
-            msg = zmq_cli_socket.recv_pyobj(flags=zmq.NOBLOCK)
-            zmq_cli_socket.send_pyobj(process_cli_msg(msg, zmq_pub_socket))
+            msg = zmq_cli_socket.recv_json(flags=zmq.NOBLOCK)
+            print msg
+            zmq_cli_socket.send_json(process_cli_msg(msg, zmq_pub_socket))
         except zmq.ZMQError, e:
             if e.errno == zmq.EAGAIN:
                 pass
