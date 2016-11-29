@@ -26,7 +26,7 @@ CMD_ID_DELETE = 2
 CMD_ID_MODIFY = 3
 CMD_ID_ADDREF = 4
 CMD_ID_DELREF = 5
-
+CMD_ID_DELETE_ALL = 6
 
 def signal_handler(sig, frame):
     """
@@ -55,9 +55,9 @@ def setup_pubsub_zmq():
     return zmq_socket
 
 
-def setup_conf_pull_zmq():
+def setup_daemon_zmq():
     """
-    Create a Zero Message Queue socket that clients can pull their config from
+    Create a Zero Message Queue socket that daemons can interact with
     :return: The zmq socket object
     """
     context = zmq.Context()
@@ -110,12 +110,12 @@ def process_client_msg(msg):
     return response
 
 
-def process_cli_msg(msg, zmq_pub_socket):
+def process_config_msg(msg, zmq_pub_socket):
     """
-    Process an incoming CLI message.
+    Process a configuration message.
     :param msg: The message, as received from the ZMQ socket
     Expected format is a JSON object with the following members:
-        t - The type of message (get_or_create | get | create | modify | delete | list | add_ref | del_ref)
+        t - The type of message (get_or_create | get | create | modify | delete | delete_all | list | add_ref | del_ref)
         o - The class of object being worked on
         on - The name of the object instance being worked on (optional for list commands only)
         (optional) f - Name of the field for the object
@@ -144,11 +144,26 @@ def process_cli_msg(msg, zmq_pub_socket):
             # Send out the PUB-SUB message
             zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_CREATE, 'obj': msg['on']}])
 
-    elif msg['t'] == 'get':     # Get an object
-        # TODO: Write this
-        pass
+    elif msg['t'] == 'get':     # Query for the existence of an object
+        try:
+            q_result = session.query(model.__class__).filter(model.__class__.name == msg['on']).one()
+            response['id'] = q_result.id
+        except NoResultFound:
+            response['status'] = 'error'
+            response['message'] = '%s %s not found' % (model.__class__.__name__, msg['on'])
+
+        print response
+
     elif msg['t'] == 'create':  # Create a new object
-        # TODO: Write this
+        new_model = model.__class__()
+        new_model.name = msg['on']
+        session.add(new_model)
+        session.commit()
+        response['result'] = 'created'
+        response['id'] = new_model.id
+
+        # Send out the PUB-SUB message
+        zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_CREATE, 'obj': msg['on']}])
         pass
     elif msg['t'] == 'delete':  # Delete a field or object
         try:
@@ -166,6 +181,14 @@ def process_cli_msg(msg, zmq_pub_socket):
             response['status'] = 'error'
             response['message'] = '%s %s not found' % (model.__class__.__name__, msg['on'])
 
+    elif msg['t'] == 'delete_all':
+        q_result = session.query(model.__class__)
+        q_result.delete()
+        session.commit()
+
+        # Send out a notification to all deamons to delete their local copies
+        zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_DELETE_ALL}])
+
     elif msg['t'] == 'list':    # List model's fields
         try:
             if 'on' in msg:
@@ -179,7 +202,7 @@ def process_cli_msg(msg, zmq_pub_socket):
             response['result'] = []
 
             for obj in q_result:
-                response['result'].append(obj.serialize_to_json())
+                response['result'].append(obj.serialize())
 
         except NoResultFound:
             response['status'] = 'error'
@@ -237,23 +260,25 @@ def main():
     zmq_pub_socket = setup_pubsub_zmq()
 
     # Setup the socket to be used for
-    zmq_conf_pull_socket = setup_conf_pull_zmq()
+    zmq_daemon_socket = setup_daemon_zmq()
 
     # Start the message loop
     while is_running:
         try:
             # Process CLI events
             msg = zmq_cli_socket.recv_json(flags=zmq.NOBLOCK)
-            print msg
-            zmq_cli_socket.send_json(process_cli_msg(msg, zmq_pub_socket))
+            logging.info('CLI request: %s' % msg)
+            zmq_cli_socket.send_json(process_config_msg(msg, zmq_pub_socket))
         except zmq.ZMQError, e:
             if e.errno == zmq.EAGAIN:
                 pass
 
         try:
             # Process any direct client requests
-            msg = zmq_conf_pull_socket.recv_json(flags=zmq.NOBLOCK)
-            zmq_conf_pull_socket.send_json(process_client_msg(msg))
+            msg = zmq_daemon_socket.recv_json(flags=zmq.NOBLOCK)
+            # zmq_daemon_socket.send_json(process_client_msg(msg))
+            zmq_daemon_socket.send_json(process_config_msg(msg, zmq_pub_socket))
+
         except zmq.ZMQError, e:
             if e.errno == zmq.EAGAIN:
                 pass

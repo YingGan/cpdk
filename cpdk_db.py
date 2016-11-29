@@ -29,16 +29,16 @@ class CPDKModel(object):
     def __tablename__(cls):
         return cls.__name__.lower()
 
-    def serialize_to_json(self):
+    def serialize(self):
         """
         Export all columns to JSON
-        :return: A JSON-formatted string containing the model's data
+        :return: A dictionary containing columns as keys, and their values.
         """
-        json_data = {}
+        data = {}
         for column in self.__class__.__table__.columns:
-            json_data[column.name] = getattr(self, column.name)
+            data[column.name] = getattr(self, column.name)
 
-        return json.dumps(json_data)
+        return data
 
     def __str__(self):
         """

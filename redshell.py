@@ -65,8 +65,16 @@ class CLIParseMode(object):
             output += '\n'
             output += '    def do_%s(self, arg):\n' % command.name
             output += '        mode = %s()\n' % command.name
-            output += '        Global.zmq_socket.send_json({"t": "get_or_create", "o": "%s", "on": arg})\n' % command.name
+
+            # If the model is managed by daemons, disallow creation of one via the CLI
+            if hasattr(command.model, 'daemon_managed') and command.model.daemon_managed:
+                output += '        Global.zmq_socket.send_json({"t": "get", "o": "%s", "on": arg})\n' % command.name
+            else:
+                output += '        Global.zmq_socket.send_json({"t": "get_or_create", "o": "%s", "on": arg})\n' % command.name
             output += '        s = Global.zmq_socket.recv_json()\n'
+            output += '        if s["status"] != "ok":\n'
+            output += '            print s["message"]\n'
+            output += '            return\n'
             output += '        mode.name = arg\n'
             output += '        mode.prompt = "%s-" + arg + ">"\n' % command.name
             output += '        mode.cmdloop()\n'
@@ -98,9 +106,15 @@ class CLIParseCmd(object):
     name = ""
     fields = []
 
-    def __init__(self, name):
+    def __init__(self, name, model):
+        """
+        Constructor.
+        :param name: The name of the command
+        :param model: The SQLAlchemy class (CPDKModel) this command maps to
+        """
         self.name = name
         self.fields = []
+        self.model = model
 
     def __str__(self):
         return self.name
@@ -131,17 +145,30 @@ class CLIParseField(object):
     """
     name = ""
 
-    def __init__(self, name, parent_cmd, obj_type):
+    def __init__(self, name, parent_cmd, column, obj_type):
+        """
+        Constructor
+        :param name: Name of the parameter
+        :param parent_cmd: The CLIParseCmd object under which this field lives
+        :param column: The SQLAlchemy Column object representing this field
+        :param obj_type:
+        """
         self.name = name
         self.parent_cmd = parent_cmd
+        self.column = column
         self.obj_type = obj_type
 
     def build_cli(self, fh):
         """
-        Write data for this field to the schema file
+        Write the accessor CLI commands for this field to the schema file
         :param fh: File Handle
         :return: None
         """
+
+        # SKip out if the field is display-only
+        if 'display_only' in self.column.info and self.column.info['display_only']:
+            return
+
         output = '\n'
 
         # Special case for booleans
@@ -198,7 +225,7 @@ def build_cli_recurse(parent_dir, parent_mode):
             for name, o in inspect.getmembers(import_namespcae, inspect.isclass):
                 # The 'name' != 'CPDKModel' check is to weed out the sqlalchemy Base class override
                 if inspect.isclass(o) and issubclass(o, CPDKModel) and name != 'CPDKModel':
-                    new_cmd = CLIParseCmd(name)
+                    new_cmd = CLIParseCmd(name, o)
                     parent_mode.add_child_command(new_cmd)
 
                     # Import all the database attributes
@@ -207,7 +234,8 @@ def build_cli_recurse(parent_dir, parent_mode):
                         # Never import a member named "id" or "name" as that's an internal-only attribute
                         if type(member_object) == InstrumentedAttribute and member_name != 'id' and member_name != 'name':
                             obj_type = getattr(o.__table__.columns, member_name).type
-                            field = CLIParseField(name=member_name, parent_cmd=new_cmd, obj_type=type(obj_type))
+                            field = CLIParseField(name=member_name, parent_cmd=new_cmd,
+                                                  column=member_object, obj_type=type(obj_type))
                             new_cmd.add_field(field)
 
         elif os.path.isdir(full_path):
@@ -261,8 +289,7 @@ class BaseCmd(cmd.Cmd):
         base_def += '                return\n'
         base_def += '            for r in reply["result"]:\n'
         # Instantiate a temporary instance of the model and print its contents
-        base_def += '                init_data = json.loads(r)\n'
-        base_def += '                print str(Global.models["%s"].__class__(**init_data))\n' % command.name
+        base_def += '                print str(Global.models["%s"].__class__(**r))\n' % command.name
         base_def += '\n'
 
     # Walk through the command tree and create global 'delete' commands for each CLI command
@@ -272,16 +299,22 @@ class BaseCmd(cmd.Cmd):
     base_def += '            print "Not enough argments (delete <mode> <item>)"\n'
     base_def += '            return\n'
     base_def += '        if arg_list[0] == "":\n'
-    base_def += '            print ""\n'
+    base_def += '            print "***ERROR: argument required"\n'
     base_def += '\n'
     for command in child_commands:
+
         base_def += '        elif arg_list[0] == "%s":\n' % command.name
-        base_def += '            Global.zmq_socket.send_json({"t": "delete", "o": "%s", "on": arg_list[1]})\n' % command.name
-        base_def += '            reply = Global.zmq_socket.recv_json()\n'
-        base_def += '            if reply["status"] != "ok":\n'
-        base_def += '                print reply["message"]\n'
-        base_def += '                return\n'
-        base_def += '\n'
+
+        # Daemon managed models can't be deleted via the CLI
+        if hasattr(command.model, 'daemon_managed') and command.model.daemon_managed:
+            base_def += '            print "%s objects can not be deleted"\n' % command.name
+        else:
+            base_def += '            Global.zmq_socket.send_json({"t": "delete", "o": "%s", "on": arg_list[1]})\n' % command.name
+            base_def += '            reply = Global.zmq_socket.recv_json()\n'
+            base_def += '            if reply["status"] != "ok":\n'
+            base_def += '                print reply["message"]\n'
+            base_def += '                return\n'
+            base_def += '\n'
 
     return base_def
 

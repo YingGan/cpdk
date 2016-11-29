@@ -11,11 +11,11 @@ Nobody likes coding schemas.
 - [ ] CLI: Tab completion for show commands
 - [ ] CLI: Tab completion for delete commands
 - [ ] CLI: Type verification
-- [ ] CLI: Support for boolean parameters
-- [ ] CLI: Support for non-db commands (arp cache, intefaces, etc)
+- [ ] CLI: Support for boolean parameters (no commands)
+- [x] CLI: Support for non-db commands (arp cache, intefaces, etc)
 - [ ] CLI: Use cmd2 module and add support for color!
 - [x] CPP: Generate C++ header files for models
-- [ ] CPDKd: Process daemon notifications
+- [x] CPDKd: Process daemon notifications
 - [x] CPDKd: Handle initial load requests from daemons
 - [ ] Support for message versions
 - [ ] REST API

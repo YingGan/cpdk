@@ -56,6 +56,8 @@ def build_cpp():
                 field_code += this_field % (column.name, 'bool')
             elif type(column.type) is sqlalchemy.types.Integer:
                 field_code += this_field % (column.name, 'int')
+            elif type(column.type) is sqlalchemy.types.BigInteger:
+                field_code += this_field % (column.name, 'uint64_t')
             elif type(column.type) is sqlalchemy.types.Text or type(column.type) is sqlalchemy.types.String:
                 field_code += this_field % (column.name, 'std::string')
             else:
@@ -73,6 +75,8 @@ def build_cpp():
             if type(column.type) is sqlalchemy.types.Boolean:
                 field_code += '    pObj->on_%s(value);\n} ' % column.name
             elif type(column.type) is sqlalchemy.types.Integer:
+                field_code += '    pObj->on_%s(value);\n} ' % column.name
+            elif type(column.type) is sqlalchemy.types.BigInteger:
                 field_code += '    pObj->on_%s(value);\n} ' % column.name
             elif type(column.type) is sqlalchemy.types.Text or type(column.type) is sqlalchemy.types.String:
                 field_code += '    pObj->on_%s(value);\n} ' % column.name

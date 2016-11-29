@@ -3,13 +3,13 @@ from sqlalchemy import Integer, Column, String, Boolean, BigInteger
 
 
 class Interface(CPDKModel):
-    enabled = Column(Boolean)
-    packets_out = Column(BigInteger,
+    enabled = Column(Boolean, default=False)
+    packets_out = Column(BigInteger, default=0,
                          info={'display_only': True})  # No CLI command will be generated
-    packets_in = Column(BigInteger,
+    packets_in = Column(BigInteger, default=0,
                         info={'display_only': True})    # No CLI command will be generated
 
-    daemon_manged = True  # This model can only be created/deleted by daemons
+    daemon_managed = True  # This model can only be created/deleted by daemons
 
 
 class Server(CPDKModel):
