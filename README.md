@@ -3,22 +3,36 @@ Control Plane Development Kit
 
 Nobody likes coding schemas.
 
-## Major Development Tasks for 1.0
+## Tasks for 0.1
 - [x] DB: Recurse through models and create schema using sqlalchemy
-- [ ] DB: Schema Migrations (update, roll-back, etc)
 - [x] CLI: Recurse through models and generate classes for cmd.Cmd
 - [x] CLI: Create RedShell daemon & process CLI commands
-- [ ] CLI: Tab completion for show commands
-- [ ] CLI: Tab completion for delete commands
 - [ ] CLI: Type verification
-- [ ] CLI: Support for boolean parameters (no commands)
+- [x] CLI: Support for boolean parameters (negation commands)
 - [x] CLI: Support for non-db commands (arp cache, intefaces, etc)
-- [ ] CLI: Use cmd2 module and add support for color!
 - [x] CPP: Generate C++ header files for models
 - [x] CPDKd: Process daemon notifications
 - [x] CPDKd: Handle initial load requests from daemons
+- [ ] Test: RedShell unit tests (create, delete, list, modify)
+- [ ] Docs: Write them!
+- [ ] Github: README.md
+
+## Tasks for 0.2
+- [ ] DB: Schema Migrations (update, roll-back, etc)
 - [ ] Support for message versions
+
+## Tasks for 0.25
+- [ ] CLI: Add SSH support to RedShell
+ 
+## Tasks for 0.3
+- [ ] CLI: Tab completion for show commands
+- [ ] CLI: Tab completion for delete commands
+- [ ] CLI: Support for parameters in quotes ex: delete Server "My Server"
+- [ ] CLI: Command to show/save/delete/load configuration
+
+## Tasks for 0.4
+- [ ] CLI: Use cmd2 module and add support for color!
 - [ ] REST API
 
-## Testing Tasks
-- [ ] Redshell unit tests (create, delete, list, modify)
+## Tasks for 0.5
+- [ ] CPDKd redundancy channel

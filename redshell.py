@@ -165,7 +165,7 @@ class CLIParseField(object):
         :return: None
         """
 
-        # SKip out if the field is display-only
+        # Skip creating a command if the field is display-only
         if 'display_only' in self.column.info and self.column.info['display_only']:
             return
 
@@ -175,17 +175,18 @@ class CLIParseField(object):
         if self.obj_type == sqlalchemy.types.Boolean:
             # The affirmative version of the command
             output += '    def do_%s(self, arg):\n' % self.name
-            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": True})\n' % (
-            self.parent_cmd.name, self.name)
+            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": True})\n' % (self.parent_cmd.name, self.name)
             output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        if s["status"] != "ok":\n';
             output += '            print s["status"]\n'
             output += '\n'
 
-            # The "disable" command
-            output += '    def do_no_%s(self, arg):\n' % self.name
-            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": False})\n' % (
-                self.parent_cmd.name, self.name)
+            # The negative version of the command
+            if 'negative_cmd' in self.column.info:
+                output += '    def do_%s(self, arg):\n' % self.column.info['negative_cmd']
+            else:
+                output += '    def do_no_%s(self, arg):\n' % self.name
+            output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": False})\n' % (self.parent_cmd.name, self.name)
             output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        if s["status"] != "ok":\n';
             output += '            print s["status"]\n'

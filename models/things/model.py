@@ -3,7 +3,9 @@ from sqlalchemy import Integer, Column, String, Boolean, BigInteger
 
 
 class Interface(CPDKModel):
-    enabled = Column(Boolean, default=False)
+    enabled = Column(Boolean, default=False,
+                     info={'negative_cmd': 'disabled'})
+
     packets_out = Column(BigInteger, default=0,
                          info={'display_only': True})  # No CLI command will be generated
     packets_in = Column(BigInteger, default=0,
