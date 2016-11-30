@@ -191,7 +191,24 @@ class CLIParseField(object):
             output += '        if s["status"] != "ok":\n';
             output += '            print s["status"]\n'
         else:
+
             output += '    def do_%s(self, arg):\n' % self.name
+
+            # Verify the paramter is of the correct type
+            output += '        try:\n'
+            if self.obj_type == sqlalchemy.types.Integer:
+                output += '            arg = int(arg)\n'
+            elif self.obj_type == sqlalchemy.types.BigInteger:
+                output += '            arg = long(arg)\n'
+            elif self.obj_type == sqlalchemy.types.String or self.obj_type == sqlalchemy.types.Text:
+                output += '            arg = str(arg)\n'
+            elif self.obj_type == sqlalchemy.types.Float:
+                output += '            arg = float(arg)\n'
+            else:
+                raise NotImplemented
+            output += '        except ValueError as e:\n'
+            output += '            print e\n'
+            output += '            return\n'
             output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": arg})\n' % (self.parent_cmd.name, self.name)
             output += '        s = Global.zmq_socket.recv_json()\n'
             output += '        if s["status"] != "ok":\n';
@@ -335,7 +352,6 @@ def build_cli():
     # Write out the schema that cmd.Cmd can use when RedShell is invoked as a daemon
     fh = open(settings.SHELL_SCHEMA_FILE, mode='w')
     fh.write('import cmd\n')    # TODO: Upgrade to cmd2 to get more features?
-    fh.write('import json\n')
     fh.write('\n')
 
     # Write out the base class that every command/mode will inherit
