@@ -5,10 +5,13 @@
 The Control Plane Development Kit (CPDK) is a collection of utilities and applications which allows developers
 to quickly, and painlessly, integrate control plane functionality into their application. 
 
+The high level architecture of CPDK is shown in the following diagram:
+![CPDK Architecture](https://github.com/zimventures/cpdk/blob/master/docs/topology.PNG "CPDK Architecture")
+
 ## Batteries Included
 - Python-based database schema declaration
 - Automatically generated CLI (easily customizable)
-- Automatically generated C++ classes
+- Automatically generated C++ classes (for use in your daemons)
 
 ## Quickstart Guide
 1. Within models directory create a .py file
