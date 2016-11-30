@@ -1,6 +1,8 @@
 # Control Plane Development Kit (CPDK)
 #### Because nobody likes coding schemas. 
 
+[![Build Status](https://travis-ci.org/zimventures/cpdk.svg?branch=TravisCL)](https://travis-ci.org/zimventures/cpdk)
+
 ## What is CPDK?
 The Control Plane Development Kit (CPDK) is a collection of utilities and applications which allows developers
 to quickly, and painlessly, integrate control plane functionality into their application. 
