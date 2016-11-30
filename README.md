@@ -1,39 +1,40 @@
-# cpdk
-Control Plane Development Kit
+# Control Plane Development Kit (CPDK)
+#### Because nobody likes coding schemas. 
 
-Nobody likes coding schemas.
+## What is CPDK?
+The Control Plane Development Kit (CPDK) is a collection of utilities and applications which allows developers
+to quickly, and painlessly, integrate control plane functionality into their application. 
 
-## Tasks for 0.1
-- [x] DB: Recurse through models and create schema using sqlalchemy
-- [x] CLI: Recurse through models and generate classes for cmd.Cmd
-- [x] CLI: Create RedShell daemon & process CLI commands
-- [x] CLI: Type verification (int, long, float, string)
-- [x] CLI: Support for boolean parameters (negation commands)
-- [x] CLI: Support for non-db commands (arp cache, intefaces, etc)
-- [x] CPP: Generate C++ header files for models
-- [x] CPDKd: Process daemon notifications
-- [x] CPDKd: Handle initial load requests from daemons
-- [ ] Test: RedShell unit tests (create, delete, list, modify)
-- [ ] Docs: Write them!
-- [ ] Github: README.md
+## Batteries Included
+- Python-based database schema declaration
+- Automatically generated CLI (easily customizable)
+- Automatically generated C++ classes
 
-## Tasks for 0.2
-- [ ] DB: Schema Migrations (update, roll-back, etc)
-- [ ] Support for message versions
+## Quickstart Guide
+1. Within models directory create a .py file
+2. Inside your models file, define classes and fields for schema
+3. Run cpdk-util.py --exportcpp (generates header files)
+4. Create your C++ classes, inheriting from CPDK generated ones and overriding appropriate methods
+5. Run cpdk-util.py --syncdb (generates database schema)
+6. Run cpdk-util.py --buildcli (generates CLI)
+7. Run python CPDKd.py (starts CPDK daemon)
+8. Run python redshell.py (starts CLI)
+9. Run your daemon
+10. Dance. Dance like nobody is watching.
 
-## Tasks for 0.25
-- [ ] CLI: Add SSH support to RedShell
-- [ ] CLI: Command help
+## Roadmap
+See the 'issues' section for future releases and planned features. 
 
-## Tasks for 0.3
-- [ ] CLI: Tab completion for show commands (ex: show Server <tab>)
-- [ ] CLI: Tab completion for delete commands (ex: delete Server <tab>)
-- [ ] CLI: Support for parameters in quotes ex: delete Server "My Server"
-- [ ] CLI: Command to show/save/delete/load configuration
+## Author
+CPDK was designed and developed by Rob Zimmerman in 2016. See the [CONTRIBUTORS](https://github.com/zimventures/cpdk/blob/master/docs/CONTRIBUTORS.md) file for more credits. 
 
-## Tasks for 0.4
-- [ ] CLI: Use cmd2 module and add support for color!
-- [ ] REST API
+## License
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/zimventures/cpdk/blob/master/docs/LICENSE) file for details. 
 
-## Tasks for 0.5
-- [ ] CPDKd redundancy channel
+## Acknowledgements
+A special hat-tip goes to the following projects, who's work helped speed CPDK's development immeasurably.
+
+- [SQLAlchemy](http://www.sqlalchemy.org/)
+- [json](https://github.com/nlohmann/json)
+- [ZeroMQ](http://zeromq.org/)
+- [Python!](https://www.python.org/)
