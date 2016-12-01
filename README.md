@@ -2,6 +2,7 @@
 #### Because nobody likes coding schemas. 
 
 [![Build Status](https://travis-ci.org/zimventures/cpdk.svg?branch=TravisCL)](https://travis-ci.org/zimventures/cpdk)
+[![Documentation Status](https://readthedocs.org/projects/cpdk/badge/?version=latest)](http://cpdk.readthedocs.io/en/latest/?badge=latest)
 
 ## What is CPDK?
 The Control Plane Development Kit (CPDK) is a collection of utilities and applications which allows developers
