@@ -1,8 +1,9 @@
 #!/usr/bin/python
 import os
 import zmq                      # Zero Message Queue
+import sys
+import argparse
 import inspect                  # Because, let's be honest, meta programming is cool
-import settings                 # Hard-coding is for chumps
 from cpdk_db import CPDKModel, import_user_models
 import sqlalchemy
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -337,20 +338,21 @@ class BaseCmd(cmd.Cmd):
     return base_def
 
 
-def build_cli():
+def build_cli(base_dir, schema_file):
     """
-    Walk through the settings.MODELS_DIR and build the CLI schema.
+    Walk through the base_dir and build the CLI schema.
      Directories are treated as empty mode containers.
-
+    :param base_dir: The base directory to start recursion from
+    :param schema_file: The name of the file to write to
     :return: None
     """
     global_mode = CLIParseMode(name='Global')
 
     # Generate a tree of all the modes, commands, and fields
-    build_cli_recurse(settings.MODELS_DIR, global_mode)
+    build_cli_recurse(base_dir, global_mode)
 
     # Write out the schema that cmd.Cmd can use when RedShell is invoked as a daemon
-    fh = open(settings.SHELL_SCHEMA_FILE, mode='w')
+    fh = open(schema_file, mode='w')
     fh.write('import cmd\n')    # TODO: Upgrade to cmd2 to get more features?
     fh.write('\n')
 
@@ -363,15 +365,27 @@ def build_cli():
 def start_shell():
     """
     Kick off the shell by entering the CLI mode in the Global class
+    :param schema_file: Name of the schema file to use
     :return: None
     """
+    parser = argparse.ArgumentParser(description='RedShell')
+    parser.add_argument('--settings', help='python path to settings file', dest='settings')
+
+    args = vars(parser.parse_args())
+
+    if args['settings']:
+        global settings
+        settings = __import__(args['settings'], globals(), locals(), ['DB_NAME', 'DEBUG'], -1)
+    else:
+        import settings
+
     global zmq_socket
     context = zmq.Context()
     zmq_socket = context.socket(zmq.REQ)
     zmq_socket.connect("tcp://localhost:" + str(settings.ZMQ_SHELL_PORT))
 
     # Import the schema and place all the objects in the global namespace
-    module = __import__(settings.SHELL_SCHEMA_FILE.replace('.py', ''), globals(), locals(), ['*'])
+    module = __import__(settings.SHELL_SCHEMA_FILE.replace('.py', '').replace(os.path.sep, '.'), globals(), locals(), ['*'])
     for k in dir(module):
         globals()[k] = getattr(module, k)
 

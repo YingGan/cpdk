@@ -4,6 +4,7 @@ Control Plane Development Kit (CPDK) Daemon
  This daemon is responsible for processing messages, interacting with the database, and providing a REST endpoint.
 """
 import zmq
+import sys
 import signal
 import logging
 import settings
@@ -16,8 +17,7 @@ from sqlalchemy.orm import sessionmaker
 
 # Global flag to indicate if the daemon should keep processing in its main loop
 is_running = True
-engine = create_engine('sqlite:///' + settings.DB_NAME, echo=settings.DEBUG)
-Session = sessionmaker(bind=engine)
+Session = None
 user_models = None
 
 # Command IDs for the PUB-SUB channel
@@ -249,6 +249,19 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     parser = argparse.ArgumentParser(description='Control Plane Development Kit Daemon)')
+    parser.add_argument('--settings', help='python path to settings file', dest='settings')
+
+    args = vars(parser.parse_args())
+
+    if args['settings']:
+        global settings
+        settings = __import__(args['settings'], globals(), locals(), ['DB_NAME', 'DEBUG'], -1)
+    else:
+        import settings
+
+    global Session
+    engine = create_engine('sqlite:///' + settings.DB_NAME, echo=settings.DEBUG)
+    Session = sessionmaker(bind=engine)
 
     # Import the database schema
     user_models = import_user_models()

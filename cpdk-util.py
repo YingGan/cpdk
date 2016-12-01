@@ -7,8 +7,8 @@ Control Plane Development Kit (CPDK)
 import os
 import sys
 import argparse
-import settings
 import sqlalchemy
+import settings
 from redshell import build_cli as rs_build_cli
 from cpdk_db import create_db, import_user_models
 
@@ -19,7 +19,7 @@ def syncdb():
     import_user_models()
 
     # Create the database
-    create_db()
+    create_db(settings.DB_NAME, settings.DEBUG)
 
 
 def build_cpp():
@@ -97,8 +97,7 @@ def build_cli():
     Build a CLI schema based on the existing OM
     :return: None
     """
-    print "Building CLI"
-    rs_build_cli()
+    rs_build_cli(settings.MODELS_DIR, settings.SHELL_SCHEMA_FILE)
 
 
 def main():
@@ -106,12 +105,19 @@ def main():
     parser.add_argument('--syncdb', help='synchronize the database with object models', action='store_true')
     parser.add_argument('--buildcli', help='create CLI schema', action='store_true')
     parser.add_argument('--exportcpp', help='create C source files', action='store_true')
+    parser.add_argument('--settings', help='python path to settings file', dest='settings')
 
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
 
     args = vars(parser.parse_args())
+
+    if args['settings']:
+        global settings
+        settings = __import__(args['settings'], globals(), locals(), ['DB_NAME', 'DEBUG'], -1)
+    else:
+        import settings
 
     if args['syncdb']:
         syncdb()
@@ -121,6 +127,7 @@ def main():
 
     if args['exportcpp']:
         build_cpp()
+
 
 if __name__ == '__main__':
     main()

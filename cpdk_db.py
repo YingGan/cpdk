@@ -3,7 +3,6 @@ These are the base types for CPDK models.
 """
 import os
 import sys
-import json
 import settings
 from os import walk
 
@@ -126,10 +125,10 @@ def unimport_user_modules(models):
         print class_name
 
 
-def create_db():
+def create_db(db_name, debug):
     """
     Lay down the databse schema based on the CPDKModels which have been defined.
     :return: None
     """
-    engine = create_engine('sqlite:///' + settings.DB_NAME, echo=settings.DEBUG)
+    engine = create_engine('sqlite:///' + db_name, echo=debug)
     CPDKModel().metadata.create_all(bind=engine)
