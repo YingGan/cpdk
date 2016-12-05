@@ -1,5 +1,6 @@
 from cpdk_db import CPDKModel
-from sqlalchemy import Integer, Column, String, Boolean, BigInteger
+from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, Column, String, Boolean, BigInteger, Table, ForeignKey
 
 
 class Interface(CPDKModel):
@@ -14,8 +15,18 @@ class Interface(CPDKModel):
     daemon_managed = True  # This model can only be created/deleted by daemons
 
 
+Server_VS_Map = Table('Server_VS_Map',
+                      CPDKModel.metadata,
+                      Column('server_id', Integer, ForeignKey('server.id')),
+                      Column('virtualserver_id', Integer, ForeignKey('virtualserver.id')))
+
+
 class Server(CPDKModel):
-    something = Column(Integer)
+    address = Column(String)
+    port = Column(Integer)
+    enabled = Column(Boolean)
+    virtual_servers = relationship('VirtualServer',
+                                   secondary=Server_VS_Map)
 
     def __str__(self):
 
@@ -30,6 +41,8 @@ class VirtualServer(CPDKModel):
     address = Column(String)
     port = Column(Integer)
     enabled = Column(Boolean)
+    servers = relationship('Server',
+                           secondary=Server_VS_Map)
 
     def __str__(self):
         output =  'Virtual Server: %s\n' % self.name

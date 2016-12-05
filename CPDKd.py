@@ -28,6 +28,7 @@ CMD_ID_ADDREF = 4
 CMD_ID_DELREF = 5
 CMD_ID_DELETE_ALL = 6
 
+
 def signal_handler(sig, frame):
     """
     Generic signal handler for catching Ctrl+C
@@ -226,11 +227,58 @@ def process_config_msg(msg, zmq_pub_socket):
             response['message'] = '%s %s not found' % (model.__class__, model.__class__.name)
 
     elif msg['t'] == 'add_ref':     # Add a reference to another object
-        # TODO: Write this
-        pass
+        try:
+            # First, lookup the object we're going to add the reference TO
+            q_result = session.query(model.__class__).filter(model.__class__.name == msg['on']).one()
+
+            # Next, lookup the object to be ADDED to the base
+            ref_model = user_models[msg['f']]
+            try:
+                q_ref_obj = session.query(ref_model.__class__).filter(ref_model.__class__.name == msg['fv']).one()
+
+                getattr(q_result, msg['rv']).append(q_ref_obj)
+                session.commit()
+
+                # Send out PUBSUB message that the relationship was added
+                zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_ADDREF,
+                                                                     'obj': msg['on'],
+                                                                     'field': msg['f'],
+                                                                     'value': msg['fv']}])
+            except NoResultFound:
+                response['status'] = 'error'
+                response['message'] = '%s %s not found' % (ref_model.__class__.__name__, msg['fv'])
+
+        except NoResultFound:
+            response['status'] = 'error'
+            response['message'] = '%s %s not found' % (model.__class__, model.__class__.name)
     elif msg['t'] == 'del_ref':     # Delete an object reference
-        # TODO: Write this
-        pass
+        try:
+            # First, lookup the object we're going to add the reference TO
+            q_result = session.query(model.__class__).filter(model.__class__.name == msg['on']).one()
+
+            # Next, lookup the object to be ADDED to the base
+            ref_model = user_models[msg['f']]
+            try:
+                q_ref_obj = session.query(ref_model.__class__).filter(ref_model.__class__.name == msg['fv']).one()
+                try:
+                    getattr(q_result, msg['rv']).remove(q_ref_obj)
+                    session.commit()
+
+                    # Send out PUBSUB message that the relationship was added
+                    zmq_pub_socket.send_json([model.__class__.__name__, {'type': CMD_ID_DELREF,
+                                                                         'obj': msg['on'],
+                                                                         'field': msg['f'],
+                                                                         'value': msg['fv']}])
+                except ValueError:
+                    response['status'] = 'error'
+                    response['message'] = '%s is not associated with this object' % msg['fv']
+            except NoResultFound:
+                response['status'] = 'error'
+                response['message'] = '%s %s not found' % (ref_model.__class__.__name__, msg['fv'])
+
+        except NoResultFound:
+            response['status'] = 'error'
+            response['message'] = '%s %s not found' % (model.__class__, model.__class__.name)
     else:
         response = {'status': 'error', 'message': 'unknown type %s' % msg['msg']}
 
@@ -264,7 +312,7 @@ def main():
     Session = sessionmaker(bind=engine)
 
     # Import the database schema
-    user_models = import_user_models()
+    user_models = import_user_models(settings.MODELS_DIR)
 
     # Setup the ZeroMQ socket for the CLI daemon
     zmq_cli_socket = setup_cli_zmq()

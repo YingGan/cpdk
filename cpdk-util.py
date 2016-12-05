@@ -6,17 +6,21 @@ Control Plane Development Kit (CPDK)
 """
 import os
 import sys
+import logging
 import argparse
 import sqlalchemy
+from sqlalchemy.inspection import inspect as sql_inspect
 import settings
 from redshell import build_cli as rs_build_cli
 from cpdk_db import create_db, import_user_models
+
+logger = logging.getLogger(__name__)
 
 
 def syncdb():
 
     # Import all of the user models
-    import_user_models()
+    import_user_models(settings.MODELS_DIR)
 
     # Create the database
     create_db(settings.DB_NAME, settings.DEBUG)
@@ -25,7 +29,7 @@ def syncdb():
 def build_cpp():
 
     # Import all the user models
-    models = import_user_models()
+    models = import_user_models(settings.MODELS_DIR)
 
     fh = open(settings.C_TEMPLATE_FILE, 'r')
     original_template = fh.read()
@@ -46,6 +50,36 @@ def build_cpp():
 
         # Fill in the desired CLIENT-SERVER port
         template = template.replace('{{ ZMQ_CLIENT_SERVER_PORT }}', str(settings.ZMQ_CLIENT_SERVER_PORT))
+
+        field_code = ''
+        add_ref_logic = ''
+        del_ref_logic = ''
+
+        forward_decls = '// Forward declarations\n'
+        # For all of the RelationshipProperty objects, setup virtuals
+        for x, column in enumerate(sql_inspect(models[model]).mapper.relationships):
+            forward_decls += 'class %s;\n' % column.mapper.class_.__name__
+            forward_decls += 'class %sMgr;\n' % column.mapper.class_.__name__
+
+            field_code += 'virtual void on_add_%s(std::string name) { }\n' % column.mapper.class_.__name__
+            field_code += 'virtual void on_remove_%s(std::string name) { }\n' % column.mapper.class_.__name__
+
+            if x > 0:
+                add_ref_logic += 'else '
+                del_ref_logic += 'else '
+
+            add_ref_logic += 'if(field == "%s") {\n' % column.mapper.class_.__name__
+            add_ref_logic += '    pObj->on_add_%s(value);\n' % column.mapper.class_.__name__
+            add_ref_logic += '}\n'
+
+            del_ref_logic += 'if(field == "%s") {\n' % column.mapper.class_.__name__
+            del_ref_logic += '    pObj->on_remove_%s(value);\n' % column.mapper.class_.__name__
+            del_ref_logic += '}\n'
+
+        template = template.replace('{{ TEMPLATE_BASE_REF_ADD_LOGIC }}', add_ref_logic)
+        template = template.replace('{{ TEMPLATE_BASE_REF_DELETE_LOGIC }}', del_ref_logic)
+        template = template.replace('{{ TEMPLATE_REFERENCE_FIELDS }}', field_code)
+        template = template.replace('{{ TEMPLATE_FORWARD_DECLS }}', forward_decls)
 
         field_code = ''
         # Construct the individual field accessor virtual function declarations
@@ -84,7 +118,6 @@ def build_cpp():
                 raise NotImplementedError('column of type %s not supported' % column.type)
 
         field_code += '\n'
-
         template = template.replace('{{ TEMPLATE_BASE_MODIFY_LOGIC }}', field_code)
 
         # Write the file to disk
@@ -115,9 +148,13 @@ def main():
 
     if args['settings']:
         global settings
+        print "Importing %s" % args['settings']
         settings = __import__(args['settings'], globals(), locals(), ['DB_NAME', 'DEBUG'], -1)
     else:
         import settings
+
+    if settings.DEBUG:
+        logger.setLevel(logging.DEBUG)
 
     if args['syncdb']:
         syncdb()
