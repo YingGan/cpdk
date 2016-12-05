@@ -11,5 +11,3 @@ class TestCPDKModelMultiDir(TestCase):
         models = import_user_models(settings.MODELS_DIR)
         print "%d models imported: %s" % (len(models), str(models))
         self.assertEqual(len(models), 3)
-
-        unimport_user_modules(models)
