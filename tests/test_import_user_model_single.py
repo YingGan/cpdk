@@ -14,7 +14,7 @@ class TestCPDKModelSingle(TestCase):
         print "importing from %s" % settings.MODELS_DIR
 
         # Import all of the models defined in the model.py file
-        models = import_user_models()
+        models = import_user_models(settings.MODELS_DIR)
 
         print "%d models imported: %s" % (len(models), str(models))
 
