@@ -1,11 +1,11 @@
 #!/usr/bin/python
 import os
 import zmq                      # Zero Message Queue
-import sys
 import argparse
 import inspect                  # Because, let's be honest, meta programming is cool
 from cpdk_db import CPDKModel, import_user_models
 import sqlalchemy
+from sqlalchemy.inspection import inspect as sql_inspect
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 # This has to be global as it will be accessed by classes in the schema
@@ -110,7 +110,7 @@ class CLIParseCmd(object):
     def __init__(self, name, model):
         """
         Constructor.
-        :param name: The name of the command
+        :param name: The name of the model
         :param model: The SQLAlchemy class (CPDKModel) this command maps to
         """
         self.name = name
@@ -129,9 +129,66 @@ class CLIParseCmd(object):
         :param fh: File handle object
         :return: None
         """
-        output = '\n'
+        output = '\n\n'
         output += 'class %s(BaseCmd):\n' % self.name
         output += '    prompt = "%s>"\n' % self.name
+
+        # For each RelationshipProperty that doesn't have no_cli=True, create add commands
+        i = sql_inspect(self.model)
+
+        # Search through all of the relationships, checking for the 'read-only' info hash key
+        # If all relationships are read-only, don't generate add or delete commands
+        has_relationships = False
+        for rel in i.mapper.relationships:
+            if 'read-only' not in rel.info or rel.info['read-only'] is False:
+                has_relationships = True
+
+        if len(i.mapper.relationships) and has_relationships:
+
+            output += '\n'
+            output += '    def do_add(self, args):\n'
+            output += '        arg_list = args.split(" ")\n'
+            output += '        if len(arg_list) < 2:\n'
+            output += '            print "*** ERROR: not enough arguments"\n'
+            output += '            return\n'
+
+            # The keys of the relationships are simply the field names in the model
+            # ex: this->> *virtual_servers* = relalationship('VirtualServer'....)
+            # Shipping this over to the server (ref_field) so it knows the field name to add the reference to
+            for rel in i.mapper.relationships.keys():
+
+                # Skip adding this relationship
+                if 'read-only' in i.mapper.relationships[rel].info and i.mapper.relationships[rel].info['read-only']:
+                    continue
+
+                output += '        if arg_list[0] == "%s":\n' % i.mapper.relationships[rel].mapper.class_.__name__
+                output += '            Global.zmq_socket.send_json({"t": "add_ref", "o": "%s", "on": self.name, "f": arg_list[0], "fv": arg_list[1], "rv": "%s"})\n' % (self.name, rel)
+                output += '            s = Global.zmq_socket.recv_json()\n'
+                output += '            if s["status"] != "ok":\n';
+                output += '                print s["message"]\n'
+                output += '\n'
+
+        # For each RelationshipProperty, create remove commands
+        if len(i.mapper.relationships) and has_relationships:
+            output += '\n'
+            output += '    def do_remove(self, args):\n'
+            output += '        arg_list = args.split(" ")\n'
+            output += '        if len(arg_list) < 2:\n'
+            output += '            print "*** ERROR: not enough arguments"\n'
+            output += '            return\n'
+
+            for rel in i.mapper.relationships.keys():
+
+                # Skip adding this relationship
+                if 'read-only' in i.mapper.relationships[rel].info and i.mapper.relationships[rel].info['read-only']:
+                    continue
+
+                output += '        if arg_list[0] == "%s":\n' % i.mapper.relationships[rel].mapper.class_.__name__
+                output += '            Global.zmq_socket.send_json({"t": "del_ref", "o": "%s", "on": self.name, "f": arg_list[0], "fv": arg_list[1], "rv": "%s"})\n' % (self.name, rel)
+                output += '            s = Global.zmq_socket.recv_json()\n'
+                output += '            if s["status"] != "ok":\n';
+                output += '                print s["message"]\n'
+                output += '\n'
 
         fh.write(output)
 
@@ -252,10 +309,11 @@ def build_cli_recurse(parent_dir, parent_mode):
 
                         # Never import a member named "id" or "name" as that's an internal-only attribute
                         if type(member_object) == InstrumentedAttribute and member_name != 'id' and member_name != 'name':
-                            obj_type = getattr(o.__table__.columns, member_name).type
-                            field = CLIParseField(name=member_name, parent_cmd=new_cmd,
-                                                  column=member_object, obj_type=type(obj_type))
-                            new_cmd.add_field(field)
+                            if member_name in o.__table__.columns:
+                                obj_type = getattr(o.__table__.columns, member_name).type
+                                field = CLIParseField(name=member_name, parent_cmd=new_cmd,
+                                                      column=member_object, obj_type=type(obj_type))
+                                new_cmd.add_field(field)
 
         elif os.path.isdir(full_path):
             # Create a new mode object, add it to the parents object list, and recurse into it
@@ -346,6 +404,7 @@ def build_cli(base_dir, schema_file):
     :param schema_file: The name of the file to write to
     :return: None
     """
+
     global_mode = CLIParseMode(name='Global')
 
     # Generate a tree of all the modes, commands, and fields
@@ -390,7 +449,7 @@ def start_shell():
         globals()[k] = getattr(module, k)
 
     Global.zmq_socket = zmq_socket
-    Global.models = import_user_models()
+    Global.models = import_user_models(settings.MODELS_DIR)
     Global().cmdloop(intro=settings.SHELL_LOGIN_BANNER)
 
 

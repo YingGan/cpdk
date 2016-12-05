@@ -17,14 +17,25 @@ using json = nlohmann::json;
 #define MSG_TYPE_DELETE_REF 5
 #define MSG_TYPE_DELETE_ALL 6
 
+// Forward declarations
+class VirtualServer;
+class VirtualServerMgr;
+
+
 class Server {
 public:
     Server(std::string name){m_Name = name;}
     virtual ~Server(){}
 
+    virtual void on_add_VirtualServer(std::string name) { }
+virtual void on_remove_VirtualServer(std::string name) { }
+
+
     virtual void on_id(int val) { }
 virtual void on_name(std::string val) { }
-virtual void on_something(int val) { }
+virtual void on_address(std::string val) { }
+virtual void on_port(int val) { }
+virtual void on_enabled(bool val) { }
 
 
     inline std::string GetName(){return m_Name;}
@@ -46,6 +57,7 @@ public:
     void Init(Server_Create create_cb, Server_Delete delete_cb, void *pData);
     void Cleanup(void);
     void ProcessMessageQueue(void);
+    Server * GetObj(std::string name){ return m_InstanceMap[name];}
 
     // Methods for object management
     void DeleteAll(void);
@@ -123,14 +135,25 @@ void ServerMgr::Init(Server_Create create_cb, Server_Delete delete_cb, void *pDa
             std::string field = it.key();
             auto value = it.value();
 
-            assert(value.is_null() == false);  // CPDKd shouldn't allow null values to get through
+            if(value.is_null())
+                continue;
 if(field == "id") {
     pObj->on_id(value);
 } else if(field == "name") {
     pObj->on_name(value);
-} else if(field == "something") {
-    pObj->on_something(value);
+} else if(field == "address") {
+    pObj->on_address(value);
+} else if(field == "port") {
+    pObj->on_port(value);
+} else if(field == "enabled") {
+    pObj->on_enabled(value);
 } 
+
+if(field == "virtual_servers") {
+   for(auto &obj : value) {
+      pObj->on_add_VirtualServer(obj);
+   }
+}
 
         }
     }
@@ -276,16 +299,40 @@ if(field == "id") {
     pObj->on_id(value);
 } else if(field == "name") {
     pObj->on_name(value);
-} else if(field == "something") {
-    pObj->on_something(value);
+} else if(field == "address") {
+    pObj->on_address(value);
+} else if(field == "port") {
+    pObj->on_port(value);
+} else if(field == "enabled") {
+    pObj->on_enabled(value);
 } 
 
         } break;
         case MSG_TYPE_ADD_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            Server *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            if(field == "VirtualServer") {
+    pObj->on_add_VirtualServer(value);
+}
+
         } break;
         case MSG_TYPE_DELETE_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            Server *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            if(field == "VirtualServer") {
+    pObj->on_remove_VirtualServer(value);
+}
+
         } break;
         default:
         throw "Unknown message type";

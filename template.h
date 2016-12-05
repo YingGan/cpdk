@@ -17,10 +17,14 @@ using json = nlohmann::json;
 #define MSG_TYPE_DELETE_REF 5
 #define MSG_TYPE_DELETE_ALL 6
 
+{{ TEMPLATE_FORWARD_DECLS }}
+
 class {{ TEMPLATE_BASE }} {
 public:
     {{ TEMPLATE_BASE }}(std::string name){m_Name = name;}
     virtual ~{{ TEMPLATE_BASE }}(){}
+
+    {{ TEMPLATE_REFERENCE_FIELDS }}
 
     {{ TEMPLATE_BASE_FIELDS }}
 
@@ -43,6 +47,7 @@ public:
     void Init({{ TEMPLATE_BASE }}_Create create_cb, {{ TEMPLATE_BASE }}_Delete delete_cb, void *pData);
     void Cleanup(void);
     void ProcessMessageQueue(void);
+    {{ TEMPLATE_BASE }} * GetObj(std::string name){ return m_InstanceMap[name];}
 
     // Methods for object management
     void DeleteAll(void);
@@ -120,8 +125,10 @@ void {{ TEMPLATE_MGR }}::Init({{ TEMPLATE_BASE }}_Create create_cb, {{ TEMPLATE_
             std::string field = it.key();
             auto value = it.value();
 
-            assert(value.is_null() == false);  // CPDKd shouldn't allow null values to get through
+            if(value.is_null())
+                continue;
 {{ TEMPLATE_BASE_MODIFY_LOGIC }}
+{{ TEMPLATE_BASE_REF_INIT_LOGIC }}
         }
     }
 
@@ -265,10 +272,24 @@ void {{ TEMPLATE_MGR }}::ProcessMessageQueue(void) {
 {{ TEMPLATE_BASE_MODIFY_LOGIC }}
         } break;
         case MSG_TYPE_ADD_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            {{ TEMPLATE_BASE }} *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            {{ TEMPLATE_BASE_REF_ADD_LOGIC }}
         } break;
         case MSG_TYPE_DELETE_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            {{ TEMPLATE_BASE }} *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            {{ TEMPLATE_BASE_REF_DELETE_LOGIC }}
         } break;
         default:
         throw "Unknown message type";

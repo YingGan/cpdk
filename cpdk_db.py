@@ -3,11 +3,11 @@ These are the base types for CPDK models.
 """
 import os
 import sys
-import settings
 from os import walk
 
 from sqlalchemy import Column, Integer, Text
 from sqlalchemy import create_engine
+from sqlalchemy.inspection import inspect as sql_inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import clear_mappers
@@ -34,8 +34,16 @@ class CPDKModel(object):
         :return: A dictionary containing columns as keys, and their values.
         """
         data = {}
+
+        # Get all the attributes
         for column in self.__class__.__table__.columns:
             data[column.name] = getattr(self, column.name)
+
+        # Get any relations
+        for key in sql_inspect(self).mapper.relationships.keys():
+            data[key] = []
+            for i in getattr(self, key):
+                data[key].append(i.name)
 
         return data
 
@@ -60,18 +68,18 @@ class CPDKModel(object):
 CPDKModel = declarative_base(cls=CPDKModel)
 
 
-def import_user_models():
+def import_user_models(base_dir):
     """
-    Import all of the user defined models within settings.MODELS_DIR
+    Import all of the user defined models within the base directory
     :return: A list dictionary of instantiated objects with base type of CPDKModel. Keys are the model names
     """
     models = {}
 
     # Walk through and import python modules
     # TODO: This should be more selective
-    for (dirpath, dirnames, filenames) in walk(settings.MODELS_DIR):
-        for f in filenames:
 
+    for (dirpath, dirnames, filenames) in walk(base_dir):
+        for f in filenames:
             # Skip over special files or non-python files
             if f.startswith('__') or (f.endswith('.py') is False):
                 continue
@@ -92,7 +100,7 @@ def import_user_models():
     return models
 
 
-def unimport_user_modules(models):
+def unimport_user_modules(models, base_dir):
     """
     Delete any previously imported users modules
     :param models: Dictionary of classes previously returned by import_user_models()
@@ -106,7 +114,7 @@ def unimport_user_modules(models):
         k = models.keys()[0]
         del models[k]
 
-    for (dirpath, dirnames, filenames) in walk(settings.MODELS_DIR):
+    for (dirpath, dirnames, filenames) in walk(base_dir):
         for f in filenames:
 
             # Skip over special files or non-python files
