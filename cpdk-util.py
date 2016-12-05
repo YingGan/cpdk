@@ -54,6 +54,19 @@ def build_cpp():
         field_code = ''
         add_ref_logic = ''
         del_ref_logic = ''
+        ref_init_logic = ''
+
+        # Create the logic that will be used to initialize relationships on each object
+        i = sql_inspect(models[model])
+        for x, key in enumerate(i.mapper.relationships.keys()):
+            if x > 0:
+                ref_init_logic += 'else '
+
+            ref_init_logic += 'if(field == "%s") {\n' % key
+            ref_init_logic += '   for(auto &obj : value) {\n'
+            ref_init_logic += '      pObj->on_add_%s(obj);\n' % i.mapper.relationships[key].mapper.class_.__name__
+            ref_init_logic += '   }\n'
+            ref_init_logic += '}\n'
 
         forward_decls = '// Forward declarations\n'
         # For all of the RelationshipProperty objects, setup virtuals
@@ -76,6 +89,7 @@ def build_cpp():
             del_ref_logic += '    pObj->on_remove_%s(value);\n' % column.mapper.class_.__name__
             del_ref_logic += '}\n'
 
+        template = template.replace('{{ TEMPLATE_BASE_REF_INIT_LOGIC }}', ref_init_logic)
         template = template.replace('{{ TEMPLATE_BASE_REF_ADD_LOGIC }}', add_ref_logic)
         template = template.replace('{{ TEMPLATE_BASE_REF_DELETE_LOGIC }}', del_ref_logic)
         template = template.replace('{{ TEMPLATE_REFERENCE_FIELDS }}', field_code)

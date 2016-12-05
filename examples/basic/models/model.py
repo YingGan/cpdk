@@ -49,4 +49,9 @@ class VirtualServer(CPDKModel):
         output += '\tAddress: %s\n' % self.address
         output += '\tPort: %s\n' % self.port
         output += '\tEnabled: %s\n' % self.enabled
+
+        if len(self.servers):
+            output += '\tServers:\n'
+        for server in self.servers:
+            output += '\t\t%s\n' % server
         return output

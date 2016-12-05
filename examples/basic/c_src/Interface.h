@@ -17,10 +17,15 @@ using json = nlohmann::json;
 #define MSG_TYPE_DELETE_REF 5
 #define MSG_TYPE_DELETE_ALL 6
 
+// Forward declarations
+
+
 class Interface {
 public:
     Interface(std::string name){m_Name = name;}
     virtual ~Interface(){}
+
+    
 
     virtual void on_id(int val) { }
 virtual void on_name(std::string val) { }
@@ -48,6 +53,7 @@ public:
     void Init(Interface_Create create_cb, Interface_Delete delete_cb, void *pData);
     void Cleanup(void);
     void ProcessMessageQueue(void);
+    Interface * GetObj(std::string name){ return m_InstanceMap[name];}
 
     // Methods for object management
     void DeleteAll(void);
@@ -125,7 +131,8 @@ void InterfaceMgr::Init(Interface_Create create_cb, Interface_Delete delete_cb, 
             std::string field = it.key();
             auto value = it.value();
 
-            assert(value.is_null() == false);  // CPDKd shouldn't allow null values to get through
+            if(value.is_null())
+                continue;
 if(field == "id") {
     pObj->on_id(value);
 } else if(field == "name") {
@@ -137,6 +144,7 @@ if(field == "id") {
 } else if(field == "packets_in") {
     pObj->on_packets_in(value);
 } 
+
 
         }
     }
@@ -292,10 +300,24 @@ if(field == "id") {
 
         } break;
         case MSG_TYPE_ADD_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            Interface *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            
         } break;
         case MSG_TYPE_DELETE_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            Interface *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            
         } break;
         default:
         throw "Unknown message type";

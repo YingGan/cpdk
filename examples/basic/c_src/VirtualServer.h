@@ -17,10 +17,19 @@ using json = nlohmann::json;
 #define MSG_TYPE_DELETE_REF 5
 #define MSG_TYPE_DELETE_ALL 6
 
+// Forward declarations
+class Server;
+class ServerMgr;
+
+
 class VirtualServer {
 public:
     VirtualServer(std::string name){m_Name = name;}
     virtual ~VirtualServer(){}
+
+    virtual void on_add_Server(std::string name) { }
+virtual void on_remove_Server(std::string name) { }
+
 
     virtual void on_id(int val) { }
 virtual void on_name(std::string val) { }
@@ -48,6 +57,7 @@ public:
     void Init(VirtualServer_Create create_cb, VirtualServer_Delete delete_cb, void *pData);
     void Cleanup(void);
     void ProcessMessageQueue(void);
+    VirtualServer * GetObj(std::string name){ return m_InstanceMap[name];}
 
     // Methods for object management
     void DeleteAll(void);
@@ -125,7 +135,8 @@ void VirtualServerMgr::Init(VirtualServer_Create create_cb, VirtualServer_Delete
             std::string field = it.key();
             auto value = it.value();
 
-            assert(value.is_null() == false);  // CPDKd shouldn't allow null values to get through
+            if(value.is_null())
+                continue;
 if(field == "id") {
     pObj->on_id(value);
 } else if(field == "name") {
@@ -137,6 +148,12 @@ if(field == "id") {
 } else if(field == "enabled") {
     pObj->on_enabled(value);
 } 
+
+if(field == "servers") {
+   for(auto &obj : value) {
+      pObj->on_add_Server(obj);
+   }
+}
 
         }
     }
@@ -292,10 +309,30 @@ if(field == "id") {
 
         } break;
         case MSG_TYPE_ADD_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            VirtualServer *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            if(field == "Server") {
+    pObj->on_add_Server(value);
+}
+
         } break;
         case MSG_TYPE_DELETE_REF: {
-            throw "Not Implemented";
+            ObjMap::iterator it = m_InstanceMap.find(objName);
+            assert(it != m_InstanceMap.end());
+
+            VirtualServer *pObj = it->second;
+            std::string field = data["field"];
+            auto value = data["value"];
+
+            if(field == "Server") {
+    pObj->on_remove_Server(value);
+}
+
         } break;
         default:
         throw "Unknown message type";

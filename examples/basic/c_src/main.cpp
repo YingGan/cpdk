@@ -1,19 +1,35 @@
 #include "Server.h"
+#include "VirtualServer.h"
 #include "Interface.h"
 #include <unistd.h>
 
+class MyVirtual : public VirtualServer {
+public:
+    inline MyVirtual(std::string name) : VirtualServer(name) {}
+    virtual void on_add_Server(std::string name) {std::cout << "adding server: " << name << std::endl;}
+    virtual void on_remove_Server(std::string name) {std::cout << "removing server: " << name << std::endl;}
+};
+
+// Callbacks for creating and deleting servers
+VirtualServer * CreateVirtualCallback(std::string name, void *pData) {
+    std::cout << "In CreateCallback for " << name << std::endl;
+    return new MyVirtual(name);
+}
+
+void DeleteVirtualCallback(VirtualServer *pServer, void *pData) {
+    std::cout << "In DeleteCallback for " << pServer->GetName() << std::endl;
+    delete pServer;
+}
 
 // Custom server class. Instantiated by the Server object manager.
 class MyServer : public Server {
 public:
     inline MyServer(std::string name) : Server(name) {}
-    virtual void on_something(int val);
+    virtual void on_port(int val);
 };
 
-// Get notified when the user changes the 'something' parameter
-void MyServer::on_something(int val) {
-
-    std::cout << this->GetName() << ":" << val << std::endl;
+void MyServer::on_port(int val) {
+    std::cout << this->GetName() << ": " << val << std::endl;
 }
 
 // Callbacks for creating and deleting servers
@@ -52,6 +68,7 @@ int main(void) {
 
     // Initialize our object managers
     ServerMgr::GetInstance().Init(CreateCallback, DeleteCallback, NULL);
+    VirtualServerMgr::GetInstance().Init(CreateVirtualCallback, DeleteVirtualCallback, NULL);
     InterfaceMgr::GetInstance().Init(CreateInterfaceCB, DeleteInterfaceCB, NULL);
 
     // Delete any existing interface objectsin the database
@@ -66,6 +83,7 @@ int main(void) {
     // Enter the main message processing loop
     while(is_running) {
         ServerMgr::GetInstance().ProcessMessageQueue();
+        VirtualServerMgr::GetInstance().ProcessMessageQueue();
         InterfaceMgr::GetInstance().ProcessMessageQueue();
     }
 
@@ -76,6 +94,7 @@ int main(void) {
 
     // Allow the object managers to cleanup
     ServerMgr::GetInstance().Cleanup();
+    VirtualServerMgr::GetInstance().Cleanup();
     InterfaceMgr::GetInstance().Cleanup();
     return 0;
 } // end of main()

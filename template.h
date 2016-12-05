@@ -128,6 +128,7 @@ void {{ TEMPLATE_MGR }}::Init({{ TEMPLATE_BASE }}_Create create_cb, {{ TEMPLATE_
             if(value.is_null())
                 continue;
 {{ TEMPLATE_BASE_MODIFY_LOGIC }}
+{{ TEMPLATE_BASE_REF_INIT_LOGIC }}
         }
     }
 
