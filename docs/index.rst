@@ -29,6 +29,11 @@ Batteries Included
    - Singleton management class for each database model
    - Base class, representing each instantiation of model
 
+Pre-Release Disclaimer
+----------------------
+Until CPDK reaches 1.0, please be aware that the interfaces may change (perhaps significantly) from release to release.
+We strongly encourage early adopters to resist deploying CPDK in major projects until we get to 1.0 - thanks!
+
 CPDK Workflow Overview
 ----------------------
 The CPDK workflow can be quickly described in three steps:
@@ -49,3 +54,10 @@ Run the ``cpdk-util.py`` script to create a database schema, CLI schema, and C++
 **Integrate**
 
 After the code generator is run, it's time to integrate the generated C++ code with your own logic.
+
+Table of Contents
+=================
+.. toctree::
+   :maxdepth: 2
+
+   internals
