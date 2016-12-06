@@ -1,0 +1,3 @@
+The tests in this directory need to be invoked individually, in separate Python processes.
+Each test calls the import_user_model() method which imports all the user modules. Obviously, doing this
+multiple times in the same Python process has no effect. As such, each test needs to be run individually.

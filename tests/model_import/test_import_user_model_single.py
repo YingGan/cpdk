@@ -10,7 +10,7 @@ class TestCPDKModelSingle(TestCase):
         :return: None
         """
         # Local models directory in the 'tests' directory
-        settings.MODELS_DIR = 'tests/models/single_file'
+        settings.MODELS_DIR = 'tests/model_import/models/single_file/'
         print "importing from %s" % settings.MODELS_DIR
 
         # Import all of the models defined in the model.py file
