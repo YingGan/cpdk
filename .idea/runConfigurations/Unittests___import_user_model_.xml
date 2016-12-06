@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Unittests - import_user_model " type="CompoundRunConfigurationType" factoryName="Compound Run Configuration">
+    <toRun type="tests" name="Unittest - import_user_model_multi_dir" />
+    <toRun type="tests" name="Unittest - import_user_model_multi_file" />
+    <toRun type="tests" name="Unittest - import_user_model_single" />
+    <method />
+  </configuration>
+</component>

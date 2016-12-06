@@ -77,7 +77,6 @@ def import_user_models(base_dir):
 
     # Walk through and import python modules
     # TODO: This should be more selective
-
     for (dirpath, dirnames, filenames) in walk(base_dir):
         for f in filenames:
             # Skip over special files or non-python files
