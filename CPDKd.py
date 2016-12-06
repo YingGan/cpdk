@@ -160,7 +160,6 @@ def process_config_msg(msg, zmq_pub_socket):
         new_model.name = msg['on']
         session.add(new_model)
         session.commit()
-        response['result'] = 'created'
         response['id'] = new_model.id
 
         # Send out the PUB-SUB message
