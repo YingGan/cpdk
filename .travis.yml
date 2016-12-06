@@ -9,7 +9,7 @@ install:
 script:
 
   # Note: These tests need to be run individually in order to reset global imports
-  - python -m unittest tests.test_import_user_model_single
-  - python -m unittest tests.test_import_user_model_multi_dir
-  - python -m unittest tests.test_import_user_model_multi_file
+  - python -m unittest tests.model_import.test_import_user_model_single
+  - python -m unittest tests.model_import.test_import_user_model_multi_dir
+  - python -m unittest tests.model_import.test_import_user_model_multi_file
 
