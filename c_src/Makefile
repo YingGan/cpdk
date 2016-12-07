@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -Wall -std=c++11 -g
+CFLAGS=-c -Wall -std=c++11 -g -Werror
 CFLAGS += -I/usr/local/include
 LDFLAGS = -lzmq
 SOURCES=main.cpp

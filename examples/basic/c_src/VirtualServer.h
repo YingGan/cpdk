@@ -320,6 +320,7 @@ if(field == "id") {
     pObj->on_add_Server(value);
 }
 
+            pObj = NULL; // Prevent compiler warnings
         } break;
         case MSG_TYPE_DELETE_REF: {
             ObjMap::iterator it = m_InstanceMap.find(objName);
@@ -333,6 +334,7 @@ if(field == "id") {
     pObj->on_remove_Server(value);
 }
 
+            pObj = NULL; // Prevent compiler warnings
         } break;
         default:
         throw "Unknown message type";

@@ -12,4 +12,4 @@ script:
   - python -m unittest tests.model_import.test_import_user_model_single
   - python -m unittest tests.model_import.test_import_user_model_multi_dir
   - python -m unittest tests.model_import.test_import_user_model_multi_file
-
+  - python -m unittest tests.exportcpp.test_basic_example
