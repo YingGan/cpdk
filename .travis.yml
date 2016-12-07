@@ -2,9 +2,7 @@ language: python
 python:
   - "2.7"
 
-#sudo: required
 sudo: false
-# dist: trusty
 
 addons:
   apt:
@@ -13,23 +11,13 @@ addons:
     packages:
     - gcc-6
     - g++-6
+    - gcc-5
+    - g++-5
     - libzmq3-dev
-
-#before_install:
-#  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-#  - sudo apt-get update -q
 
 # Install dependencies
 install:
   - pip install -r requirements.txt
-  - export CXX="g++-6"
-
-#  - sudo apt-get install gcc-6
-#  - export CXX="g++-6"
-#  - sudo readlink -f `which c++`
-#  - sudo readlink -f `which g++`
-#  - sudo g++ -v
-#  - sudo g++-6.0 -v
 
 script:
 
@@ -37,4 +25,11 @@ script:
   - python -m unittest tests.model_import.test_import_user_model_single
   - python -m unittest tests.model_import.test_import_user_model_multi_dir
   - python -m unittest tests.model_import.test_import_user_model_multi_file
+
+  # Test with GCC 5
+  - export CXX="g++-5"
+  - python -m unittest tests.exportcpp.test_basic_example
+
+  # Test with GCC 6
+  - export CXX="g++-6"
   - python -m unittest tests.exportcpp.test_basic_example
