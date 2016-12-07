@@ -9,8 +9,8 @@ addons:
   apt:
     packages:
       # install toolchains
-      - gcc-6
-      - g++-6
+      - gcc-5
+      - g++-5
 
 # Install dependencies
 install:
