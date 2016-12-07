@@ -1,4 +1,3 @@
-CC=g++
 CFLAGS=-c -Wall -std=c++0x -g -Werror
 CFLAGS += -I/usr/local/include
 LDFLAGS = -lzmq
@@ -9,10 +8,10 @@ EXECUTABLE=cpdk-test
 all: $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
+	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 
 .cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
+	$(CXX) $(CFLAGS) $< -o $@
 
 clean:
 	rm -f *.o $(EXECUTABLE)
