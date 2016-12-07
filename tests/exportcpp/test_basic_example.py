@@ -10,6 +10,9 @@ class BasicExample(TestCase):
         Validate cpdk-util.py successfully generates the required header files.
         """
 
+        # Print out some debugging information about the environment
+        call(['g++ -v'], shell=True)
+
         # Run cpdk-util and generate the C++ header files
         ret = call(['python', 'cpdk-util.py', '--settings', 'examples.basic.settings', '--exportcpp'])
         self.assertEqual(ret, 0)
