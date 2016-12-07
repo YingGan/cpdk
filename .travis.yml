@@ -5,7 +5,7 @@ python:
 #sudo: required
 dist: trusty
 
-#
+# Just gcc
 addons:
   apt:
     sources:
