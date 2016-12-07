@@ -5,14 +5,14 @@ python:
 sudo: required
 dist: trusty
 
-before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -q
-  - sudo apt-get install gcc-5 -y
 
 # Install dependencies
 install:
   - pip install -r requirements.txt
+
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update -q
+  - sudo apt-get install gcc-6 -y
 
 script:
 
