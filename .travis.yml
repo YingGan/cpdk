@@ -17,6 +17,9 @@ install:
   - export CXX="g++-6"
   - sudo readlink -f `which c++`
   - sudo readlink -f `which g++`
+  - sudo g++ -v
+  - sudo g++-6 -v
+  - sudo g++-6.0 -v
 
 script:
 
