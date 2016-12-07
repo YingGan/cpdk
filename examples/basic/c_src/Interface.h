@@ -1,5 +1,5 @@
 // 3rd party requirements
-#include <zmq.h>
+#include "zmq.h"
 #include "json.hpp"
 
 // Standard libraries
@@ -308,6 +308,7 @@ if(field == "id") {
             auto value = data["value"];
 
             
+            (void)pObj; // Prevent compiler warnings
         } break;
         case MSG_TYPE_DELETE_REF: {
             ObjMap::iterator it = m_InstanceMap.find(objName);
@@ -318,6 +319,7 @@ if(field == "id") {
             auto value = data["value"];
 
             
+            (void)pObj; // Prevent compiler warnings
         } break;
         default:
         throw "Unknown message type";
