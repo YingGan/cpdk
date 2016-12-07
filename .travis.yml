@@ -2,23 +2,31 @@ language: python
 python:
   - "2.7"
 
-sudo: required
+#sudo: required
 dist: trusty
 
 
-before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -q
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-6.0
+      - g++-6.0
+
+#before_install:
+#  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+#  - sudo apt-get update -q
 
 # Install dependencies
 install:
   - pip install -r requirements.txt
-  - sudo apt-get install gcc-6
-  - export CXX="g++-6"
-  - sudo readlink -f `which c++`
-  - sudo readlink -f `which g++`
-  - sudo g++ -v
-  - sudo g++-6.0 -v
+#  - sudo apt-get install gcc-6
+#  - export CXX="g++-6"
+#  - sudo readlink -f `which c++`
+#  - sudo readlink -f `which g++`
+#  - sudo g++ -v
+#  - sudo g++-6.0 -v
 
 script:
 
@@ -26,4 +34,4 @@ script:
   - python -m unittest tests.model_import.test_import_user_model_single
   - python -m unittest tests.model_import.test_import_user_model_multi_dir
   - python -m unittest tests.model_import.test_import_user_model_multi_file
-  - sudo python -m unittest tests.exportcpp.test_basic_example
+  - python -m unittest tests.exportcpp.test_basic_example
