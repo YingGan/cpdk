@@ -280,7 +280,7 @@ void {{ TEMPLATE_MGR }}::ProcessMessageQueue(void) {
             auto value = data["value"];
 
             {{ TEMPLATE_BASE_REF_ADD_LOGIC }}
-            pObj = NULL; // Prevent compiler warnings
+            (void)pObj; // Prevent compiler warnings
         } break;
         case MSG_TYPE_DELETE_REF: {
             ObjMap::iterator it = m_InstanceMap.find(objName);
@@ -291,7 +291,7 @@ void {{ TEMPLATE_MGR }}::ProcessMessageQueue(void) {
             auto value = data["value"];
 
             {{ TEMPLATE_BASE_REF_DELETE_LOGIC }}
-            pObj = NULL; // Prevent compiler warnings
+            (void)pObj; // Prevent compiler warnings
         } break;
         default:
         throw "Unknown message type";

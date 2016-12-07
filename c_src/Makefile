@@ -1,4 +1,4 @@
-CFLAGS=-c -Wall -std=c++0x -g -Werror
+CFLAGS=-c -Wall -std=c++11 -g -Werror
 CFLAGS += -I/usr/local/include
 LDFLAGS = -lzmq
 SOURCES=main.cpp
@@ -15,3 +15,4 @@ $(EXECUTABLE): $(OBJECTS)
 
 clean:
 	rm -f *.o $(EXECUTABLE)
+
