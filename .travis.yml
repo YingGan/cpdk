@@ -20,6 +20,8 @@ addons:
 # Install dependencies
 install:
   - pip install -r requirements.txt
+  - export CXX="g++-5.0"
+
 #  - sudo apt-get install gcc-6
 #  - export CXX="g++-6"
 #  - sudo readlink -f `which c++`
