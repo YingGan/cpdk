@@ -11,8 +11,8 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       # install toolchains
-      - gcc-5
-      - g++-5
+      - gcc-6
+      - g++-6
 
 # Install dependencies
 install:
