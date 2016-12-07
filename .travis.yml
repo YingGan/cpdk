@@ -9,10 +9,10 @@ dist: trusty
 addons:
   apt:
     sources:
-      - ubuntu-toolchain-r-test
+    - ubuntu-toolchain-r-test
     packages:
-      - gcc-6.0
-      - g++-6.0
+    - gcc-6.0
+    - g++-6.0
 
 #before_install:
 #  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
