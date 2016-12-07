@@ -3,6 +3,7 @@ python:
   - "2.7"
 
 #sudo: required
+sudo: false
 # dist: trusty
 
 addons:
@@ -21,7 +22,7 @@ addons:
 # Install dependencies
 install:
   - pip install -r requirements.txt
-  - export CXX="g++-5"
+  - export CXX="g++-6"
 
 #  - sudo apt-get install gcc-6
 #  - export CXX="g++-6"
