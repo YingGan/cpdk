@@ -15,8 +15,8 @@ install:
   - pip install -r requirements.txt
   - sudo apt-get install gcc-6
   - export CXX="g++-6"
-  - readlink -f `which c++`
-  - readlink -f `which g++`
+  - sudo readlink -f `which c++`
+  - sudo readlink -f `which g++`
 
 script:
 
@@ -24,4 +24,4 @@ script:
   - python -m unittest tests.model_import.test_import_user_model_single
   - python -m unittest tests.model_import.test_import_user_model_multi_dir
   - python -m unittest tests.model_import.test_import_user_model_multi_file
-  - python -m unittest tests.exportcpp.test_basic_example
+  - sudo python -m unittest tests.exportcpp.test_basic_example
