@@ -47,6 +47,16 @@ class CPDKModel(object):
 
         return data
 
+    @classmethod
+    def get_display_name(cls):
+        """
+        Fetch the display name for this model.
+        If 'display_name' is defined in the derived class, return it.
+        Otherwise, use the lowercase name of the derived class.
+        :return: A string to use for display.
+        """
+        return getattr(cls, 'display_name', cls.__name__.lower())
+
     def __str__(self):
         """
         Render a string representation of the model. Will display all columns.

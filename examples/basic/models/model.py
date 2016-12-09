@@ -12,7 +12,8 @@ class Interface(CPDKModel):
     packets_in = Column(BigInteger, default=0,
                         info={'display_only': True})    # No CLI command will be generated
 
-    daemon_managed = True  # This model can only be created/deleted by daemons
+    display_name = 'port'     # The string used in the CLI to enter the mode
+    daemon_managed = True     # This model can only be created/deleted by daemons
 
 
 Server_VS_Map = Table('Server_VS_Map',
@@ -32,17 +33,22 @@ class Server(CPDKModel):
 
         output = '%s\n' % self.name
         output += '===================\n'
-        if self.something:
-            output += 'something: %d\n' % self.something
+        output = 'Server: %s\n' % self.name
+        output += '\tAddress: %s\n' % self.address
+        output += '\tPort: %s\n' % self.port
+        output += '\tEnabled: %s\n' % self.enabled
         return output
 
 
 class VirtualServer(CPDKModel):
     address = Column(String)
     port = Column(Integer)
-    enabled = Column(Boolean)
+    enabled = Column(Boolean,
+                     info={'negative_cmd': 'disabled'})
     servers = relationship('Server',
                            secondary=Server_VS_Map)
+
+    display_name = 'virtual'
 
     def __str__(self):
         output =  'Virtual Server: %s\n' % self.name

@@ -64,7 +64,7 @@ class CLIParseMode(object):
         # Add mode accessors for any commands in this mode
         for command in self.child_commands:
             output += '\n'
-            output += '    def do_%s(self, arg):\n' % command.name
+            output += '    def do_%s(self, arg):\n' % command.model.get_display_name()
             output += '        mode = %s()\n' % command.name
 
             # If the model is managed by daemons, disallow creation of one via the CLI
@@ -77,7 +77,7 @@ class CLIParseMode(object):
             output += '            print s["message"]\n'
             output += '            return\n'
             output += '        mode.name = arg\n'
-            output += '        mode.prompt = "%s-" + arg + ">"\n' % command.name
+            output += '        mode.prompt = "%s-" + arg + ">"\n' % command.model.get_display_name()
             output += '        mode.cmdloop()\n'
 
         # Add handlers for any nested modes within this mode
@@ -131,7 +131,7 @@ class CLIParseCmd(object):
         """
         output = '\n\n'
         output += 'class %s(BaseCmd):\n' % self.name
-        output += '    prompt = "%s>"\n' % self.name
+        output += '    prompt = "%s>"\n' % self.model.get_display_name()
 
         # For each RelationshipProperty that doesn't have no_cli=True, create add commands
         i = sql_inspect(self.model)
@@ -353,7 +353,7 @@ class BaseCmd(cmd.Cmd):
     base_def += '            print ""\n'
 
     for command in child_commands:
-        base_def += '        elif arg_list[0] == "%s":\n' % command.name
+        base_def += '        elif arg_list[0] == "%s":\n' % command.model.get_display_name()
         base_def += '            zmq_cmd = None\n'
         base_def += '            if len(arg_list) == 1:\n'  # Show all elements
         base_def += '                zmq_cmd = {"t": "list", "o": "%s"}\n' % command.name
@@ -380,11 +380,11 @@ class BaseCmd(cmd.Cmd):
     base_def += '\n'
     for command in child_commands:
 
-        base_def += '        elif arg_list[0] == "%s":\n' % command.name
+        base_def += '        elif arg_list[0] == "%s":\n' % command.model.get_display_name()
 
         # Daemon managed models can't be deleted via the CLI
         if hasattr(command.model, 'daemon_managed') and command.model.daemon_managed:
-            base_def += '            print "%s objects can not be deleted"\n' % command.name
+            base_def += '            print "%s objects can not be deleted"\n' % command.model.get_display_name()
         else:
             base_def += '            Global.zmq_socket.send_json({"t": "delete", "o": "%s", "on": arg_list[1]})\n' % command.name
             base_def += '            reply = Global.zmq_socket.recv_json()\n'
