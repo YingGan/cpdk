@@ -12,6 +12,11 @@ class RedShellTest(TestCase):
     cpdkd_process = None
 
     def setUp(self):
+
+        # Generate RedShell schema
+        pexpect.run('python cpdk-util.py --settings examples.basic.settings --syncdb')
+        pexpect.run('python cpdk-util.py --settings examples.basic.settings --buildcli')
+
         # Start CPDKd
         self.cpdkd_process = subprocess.Popen('python CPDKd.py --settings examples.basic.settings',
                                               stdout=subprocess.PIPE,
