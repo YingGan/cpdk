@@ -2,6 +2,7 @@
 #include "VirtualServer.h"
 #include "Interface.h"
 #include <unistd.h>
+#include <signal.h>
 
 class MyVirtual : public VirtualServer {
 public:
