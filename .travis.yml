@@ -21,15 +21,18 @@ install:
 
 script:
 
-  # Note: These tests need to be run individually in order to reset global imports
+  # Note: The import_user_model tests MUST be run individually in order to reset global imports
   - python -m unittest tests.model_import.test_import_user_model_single
   - python -m unittest tests.model_import.test_import_user_model_multi_dir
   - python -m unittest tests.model_import.test_import_user_model_multi_file
 
-  # Test with GCC 5
+  # CLI Validation
+  - python -m unittest tests.redshell.test_redshell
+
+  # Test code generation with GCC 5
   - export CXX="g++-5"
   - python -m unittest tests.exportcpp.test_basic_example
 
-  # Test with GCC 6
+  # Test code generation with GCC 6
   - export CXX="g++-6"
   - python -m unittest tests.exportcpp.test_basic_example

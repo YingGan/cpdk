@@ -61,3 +61,4 @@ Table of Contents
    :maxdepth: 2
 
    internals
+   create_models
