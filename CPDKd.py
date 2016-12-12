@@ -153,8 +153,6 @@ def process_config_msg(msg, zmq_pub_socket):
             response['status'] = 'error'
             response['message'] = '%s %s not found' % (model.__class__.__name__, msg['on'])
 
-        print response
-
     elif msg['t'] == 'create':  # Create a new object
         new_model = model.__class__()
         new_model.name = msg['on']
