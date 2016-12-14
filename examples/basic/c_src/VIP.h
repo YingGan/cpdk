@@ -18,22 +18,16 @@ using json = nlohmann::json;
 #define MSG_TYPE_DELETE_ALL 6
 
 // Forward declarations
-class VirtualServer;
-class VirtualServerMgr;
 
 
-class Server {
+class VIP {
 public:
-    Server(std::string name){m_Name = name;}
-    virtual ~Server(){}
+    VIP(std::string name){m_Name = name;}
+    virtual ~VIP(){}
 
-    virtual void on_add_VirtualServer(std::string name) { }
-virtual void on_remove_VirtualServer(std::string name) { }
-
+    
 
     virtual void on_address(std::string val) { }
-virtual void on_port(int val) { }
-virtual void on_enabled(bool val) { }
 
 
     inline std::string GetName(){return m_Name;}
@@ -41,21 +35,21 @@ private:
     std::string m_Name;
 };
 
-typedef Server * (*Server_Create)(std::string name, void *pData);
-typedef void (*Server_Delete)(Server *pObj, void *pData);
+typedef VIP * (*VIP_Create)(std::string name, void *pData);
+typedef void (*VIP_Delete)(VIP *pObj, void *pData);
 
-class ServerMgr {
+class VIPMgr {
 public:
 
-    static ServerMgr & GetInstance() {
-        static ServerMgr s_Instance;
+    static VIPMgr & GetInstance() {
+        static VIPMgr s_Instance;
         return s_Instance;
     }
 
-    void Init(Server_Create create_cb, Server_Delete delete_cb, void *pData);
+    void Init(VIP_Create create_cb, VIP_Delete delete_cb, void *pData);
     void Cleanup(void);
     void ProcessMessageQueue(void);
-    Server * GetObj(std::string name){ return m_InstanceMap[name];}
+    VIP * GetObj(std::string name){ return m_InstanceMap[name];}
 
     // Methods for object management
     void DeleteAll(void);
@@ -70,23 +64,23 @@ private:
     void * m_ZMQClientSocket;
     void * m_ZMQContext;
 
-    Server_Create m_CreateCallback;
-    Server_Delete m_DeleteCallback;
+    VIP_Create m_CreateCallback;
+    VIP_Delete m_DeleteCallback;
     void * m_pCallbackData;
 
-    typedef std::unordered_map<std::string, Server *> ObjMap;
+    typedef std::unordered_map<std::string, VIP *> ObjMap;
     ObjMap m_InstanceMap;
 
     json SendClientMessage(json &j);
 
 protected:
     // Constructors (hidden for singleton-only access)
-    ServerMgr() {};
-    ServerMgr(ServerMgr const &);
-    void operator=(ServerMgr const&);
+    VIPMgr() {};
+    VIPMgr(VIPMgr const &);
+    void operator=(VIPMgr const&);
 };
 
-void ServerMgr::Init(Server_Create create_cb, Server_Delete delete_cb, void *pData) {
+void VIPMgr::Init(VIP_Create create_cb, VIP_Delete delete_cb, void *pData) {
 
     m_CreateCallback = create_cb;
     m_DeleteCallback = delete_cb;
@@ -95,8 +89,8 @@ void ServerMgr::Init(Server_Create create_cb, Server_Delete delete_cb, void *pDa
     m_ZMQContext = zmq_ctx_new();
     m_ZMQPubSubSocket = zmq_socket(m_ZMQContext, ZMQ_SUB);
 
-    // Subscribe to the Server PUB-SUB channel
-    zmq_setsockopt(m_ZMQPubSubSocket, ZMQ_SUBSCRIBE, "[\"Server\"", strlen("[\"Server\""));
+    // Subscribe to the VIP PUB-SUB channel
+    zmq_setsockopt(m_ZMQPubSubSocket, ZMQ_SUBSCRIBE, "[\"VIP\"", strlen("[\"VIP\""));
     zmq_connect(m_ZMQPubSubSocket, "tcp://localhost:5744");
 
     // Subscribe to the client-server socket
@@ -106,7 +100,7 @@ void ServerMgr::Init(Server_Create create_cb, Server_Delete delete_cb, void *pDa
     // Fetch all of the objects this manager cares about
     json j;
     j["t"] = "list";
-    j["o"] = "Server";
+    j["o"] = "VIP";
     std::string j_msg = j.dump();
     zmq_send(m_ZMQClientSocket, j_msg.c_str(), strlen(j_msg.c_str()), 0);
 
@@ -126,7 +120,7 @@ void ServerMgr::Init(Server_Create create_cb, Server_Delete delete_cb, void *pDa
         throw "list command failed";
 
     for(auto &obj : j2["result"]) {
-        Server *pObj = m_CreateCallback(obj["name"], m_pCallbackData);
+        VIP *pObj = m_CreateCallback(obj["name"], m_pCallbackData);
         m_InstanceMap[obj["name"]] = pObj;
 
         for (json::iterator it = obj.begin(); it != obj.end(); ++it) {
@@ -137,44 +131,35 @@ void ServerMgr::Init(Server_Create create_cb, Server_Delete delete_cb, void *pDa
                 continue;
 if(field == "address") {
     pObj->on_address(value);
-} else if(field == "port") {
-    pObj->on_port(value);
-} else if(field == "enabled") {
-    pObj->on_enabled(value);
 } 
 
-if(field == "virtual_servers") {
-   for(auto &obj : value) {
-      pObj->on_add_VirtualServer(obj);
-   }
-}
 
         }
     }
 
 
-} // end of ServerMgr::Init()
+} // end of VIPMgr::Init()
 
-void ServerMgr::Cleanup(void) {
+void VIPMgr::Cleanup(void) {
     zmq_close(m_ZMQPubSubSocket);
     zmq_close(m_ZMQClientSocket);
     zmq_ctx_destroy(m_ZMQContext);
-} // end of ServerMgr::Cleanup()
+} // end of VIPMgr::Cleanup()
 
-void ServerMgr::DeleteAll(void) {
+void VIPMgr::DeleteAll(void) {
     json j;
     j["t"] = "delete_all";
-    j["o"] = "Server";
+    j["o"] = "VIP";
     SendClientMessage(j);
 
     // Note: No actual deletes will occur here.
     //  CPDKd will send us a "delete all" message on the pub-sub channel.
-} // end of void ServerMgr::DeleteAll()
+} // end of void VIPMgr::DeleteAll()
 
-void ServerMgr::Create(std::string objectName) {
+void VIPMgr::Create(std::string objectName) {
     json j;
     j["t"] = "create";
-    j["o"] = "Server";
+    j["o"] = "VIP";
     j["on"] = objectName;
 
     SendClientMessage(j);
@@ -182,9 +167,9 @@ void ServerMgr::Create(std::string objectName) {
     // Note: No actual creates will occur here.
     //  CPDKd will send us a "create" message on the pub-sub channel.
 
-} // end of ServerMgr::Create()
+} // end of VIPMgr::Create()
 
-json ServerMgr::SendClientMessage(json &j) {
+json VIPMgr::SendClientMessage(json &j) {
 
     int msgLen;
     zmq_msg_t msg;
@@ -207,43 +192,43 @@ json ServerMgr::SendClientMessage(json &j) {
         throw "list command failed";
 
     return jResponse;
-} // end of ServerMgr::SendClientMessage()
+} // end of VIPMgr::SendClientMessage()
 
-void ServerMgr::UpdateField(std::string objectName, std::string fieldName, std::string val) {
+void VIPMgr::UpdateField(std::string objectName, std::string fieldName, std::string val) {
     json j;
     j["t"] = "modify";
-    j["o"] = "Server";
+    j["o"] = "VIP";
     j["on"] = objectName;
     j["f"] = fieldName;
     j["fv"] = val;
 
     SendClientMessage(j);
-} // end of ServerMgr::UpdateField()
+} // end of VIPMgr::UpdateField()
 
-void ServerMgr::UpdateField(std::string objectName, std::string fieldName, uint64_t val) {
+void VIPMgr::UpdateField(std::string objectName, std::string fieldName, uint64_t val) {
     json j;
     j["t"] = "modify";
-    j["o"] = "Server";
+    j["o"] = "VIP";
     j["on"] = objectName;
     j["f"] = fieldName;
     j["fv"] = val;
 
     SendClientMessage(j);
-} // end of ServerMgr::UpdateField()
+} // end of VIPMgr::UpdateField()
 
-void ServerMgr::UpdateField(std::string objectName, std::string fieldName, bool val) {
+void VIPMgr::UpdateField(std::string objectName, std::string fieldName, bool val) {
     json j;
     j["t"] = "modify";
-    j["o"] = "Server";
+    j["o"] = "VIP";
     j["on"] = objectName;
     j["f"] = fieldName;
     j["fv"] = val;
 
     SendClientMessage(j);
-} // end of ServerMgr::UpdateField()
+} // end of VIPMgr::UpdateField()
 
 
-void ServerMgr::ProcessMessageQueue(void) {
+void VIPMgr::ProcessMessageQueue(void) {
     zmq_msg_t msg;
     zmq_msg_init(&msg);
 
@@ -269,7 +254,7 @@ void ServerMgr::ProcessMessageQueue(void) {
         case MSG_TYPE_DELETE: {
             ObjMap::iterator it = m_InstanceMap.find(objName);
             if(it != m_InstanceMap.end()) {
-                Server *pObj = m_InstanceMap[objName];
+                VIP *pObj = m_InstanceMap[objName];
                 m_InstanceMap.erase(pObj->GetName());
                 m_DeleteCallback(pObj, NULL);
             }
@@ -285,16 +270,12 @@ void ServerMgr::ProcessMessageQueue(void) {
             if(it == m_InstanceMap.end())
                 break;
 
-            Server *pObj = m_InstanceMap[objName];
+            VIP *pObj = m_InstanceMap[objName];
             std::string field = data["field"];
             auto value = data["value"];
 
 if(field == "address") {
     pObj->on_address(value);
-} else if(field == "port") {
-    pObj->on_port(value);
-} else if(field == "enabled") {
-    pObj->on_enabled(value);
 } 
 
         } break;
@@ -302,31 +283,25 @@ if(field == "address") {
             ObjMap::iterator it = m_InstanceMap.find(objName);
             assert(it != m_InstanceMap.end());
 
-            Server *pObj = it->second;
+            VIP *pObj = it->second;
             std::string field = data["field"];
             auto value = data["value"];
 
-            if(field == "VirtualServer") {
-    pObj->on_add_VirtualServer(value);
-}
-
+            
             (void)pObj; // Prevent compiler warnings
         } break;
         case MSG_TYPE_DELETE_REF: {
             ObjMap::iterator it = m_InstanceMap.find(objName);
             assert(it != m_InstanceMap.end());
 
-            Server *pObj = it->second;
+            VIP *pObj = it->second;
             std::string field = data["field"];
             auto value = data["value"];
 
-            if(field == "VirtualServer") {
-    pObj->on_remove_VirtualServer(value);
-}
-
+            
             (void)pObj; // Prevent compiler warnings
         } break;
         default:
         throw "Unknown message type";
     }
-} // end of ServerMgr::ProcessMessageQueue()
+} // end of VIPMgr::ProcessMessageQueue()

@@ -20,6 +20,8 @@ using json = nlohmann::json;
 // Forward declarations
 class Server;
 class ServerMgr;
+class VIP;
+class VIPMgr;
 
 
 class VirtualServer {
@@ -29,12 +31,11 @@ public:
 
     virtual void on_add_Server(std::string name) { }
 virtual void on_remove_Server(std::string name) { }
+virtual void on_add_VIP(std::string name) { }
+virtual void on_remove_VIP(std::string name) { }
 
 
-    virtual void on_id(int val) { }
-virtual void on_name(std::string val) { }
-virtual void on_address(std::string val) { }
-virtual void on_port(int val) { }
+    virtual void on_port(int val) { }
 virtual void on_enabled(bool val) { }
 
 
@@ -137,13 +138,7 @@ void VirtualServerMgr::Init(VirtualServer_Create create_cb, VirtualServer_Delete
 
             if(value.is_null())
                 continue;
-if(field == "id") {
-    pObj->on_id(value);
-} else if(field == "name") {
-    pObj->on_name(value);
-} else if(field == "address") {
-    pObj->on_address(value);
-} else if(field == "port") {
+if(field == "port") {
     pObj->on_port(value);
 } else if(field == "enabled") {
     pObj->on_enabled(value);
@@ -152,6 +147,11 @@ if(field == "id") {
 if(field == "servers") {
    for(auto &obj : value) {
       pObj->on_add_Server(obj);
+   }
+}
+else if(field == "vips") {
+   for(auto &obj : value) {
+      pObj->on_add_VIP(obj);
    }
 }
 
@@ -295,13 +295,7 @@ void VirtualServerMgr::ProcessMessageQueue(void) {
             std::string field = data["field"];
             auto value = data["value"];
 
-if(field == "id") {
-    pObj->on_id(value);
-} else if(field == "name") {
-    pObj->on_name(value);
-} else if(field == "address") {
-    pObj->on_address(value);
-} else if(field == "port") {
+if(field == "port") {
     pObj->on_port(value);
 } else if(field == "enabled") {
     pObj->on_enabled(value);
@@ -319,6 +313,9 @@ if(field == "id") {
             if(field == "Server") {
     pObj->on_add_Server(value);
 }
+else if(field == "VIP") {
+    pObj->on_add_VIP(value);
+}
 
             (void)pObj; // Prevent compiler warnings
         } break;
@@ -332,6 +329,9 @@ if(field == "id") {
 
             if(field == "Server") {
     pObj->on_remove_Server(value);
+}
+else if(field == "VIP") {
+    pObj->on_remove_VIP(value);
 }
 
             (void)pObj; // Prevent compiler warnings

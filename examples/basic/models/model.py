@@ -29,35 +29,51 @@ class Server(CPDKModel):
     virtual_servers = relationship('VirtualServer',
                                    secondary=Server_VS_Map)
 
-    def __str__(self):
-
-        output = '%s\n' % self.name
-        output += '===================\n'
-        output = 'Server: %s\n' % self.name
-        output += '\tAddress: %s\n' % self.address
-        output += '\tPort: %s\n' % self.port
-        output += '\tEnabled: %s\n' % self.enabled
+    @staticmethod
+    def show(data):
+        output = '%s\n' % data['name']
+        output += '\tPort: %s\n' % data['port']
+        output += '\tEnabled: %s\n' % data['enabled']
         return output
 
 
-class VirtualServer(CPDKModel):
+class VIP(CPDKModel):
     address = Column(String)
+    virtual_id = Column(Integer, ForeignKey('virtualserver.id'))
+
+    def __str__(self):
+        return self.address
+
+
+class VirtualServer(CPDKModel):
     port = Column(Integer)
     enabled = Column(Boolean,
                      info={'negative_cmd': 'disabled'})
+
+    # Servers associated with this virtual server (many-to-many)
     servers = relationship('Server',
                            secondary=Server_VS_Map)
 
+    # List of VIP's associated with this virtual server (many-to-one)
+    vips = relationship('VIP')
+
     display_name = 'virtual'
 
-    def __str__(self):
-        output =  'Virtual Server: %s\n' % self.name
-        output += '\tAddress: %s\n' % self.address
-        output += '\tPort: %s\n' % self.port
-        output += '\tEnabled: %s\n' % self.enabled
+    @staticmethod
+    def show(data):
+        output = 'Virtual Server: %s\n' % data['name']
+        output += '\tPort: %s\n' % data['port']
+        output += '\tEnabled: %s\n' % data['enabled']
 
-        if len(self.servers):
+        if len(data['vips']):
+            output += '\tVirtual IPs:\n'
+            for vip in data['vips']:
+                output += '\t\t%s\n' % vip
+            output += '\n'
+
+        if len(data['servers']):
             output += '\tServers:\n'
-        for server in self.servers:
-            output += '\t\t%s\n' % server
+            for server in data['servers']:
+                output += '\t\t%s\n' % server
+
         return output

@@ -1,6 +1,8 @@
 #include "Server.h"
 #include "VirtualServer.h"
 #include "Interface.h"
+#include "VIP.h"
+
 #include <unistd.h>
 #include <signal.h>
 
@@ -9,6 +11,13 @@ public:
     inline MyVirtual(std::string name) : VirtualServer(name) {}
     virtual void on_add_Server(std::string name) {std::cout << "adding server: " << name << std::endl;}
     virtual void on_remove_Server(std::string name) {std::cout << "removing server: " << name << std::endl;}
+    virtual void on_add_VIP(std::string name) {
+        std::cout << "Adding VIP (" << name << ") to virtual server (" << this->GetName() << ")" << std::endl;
+    }
+
+    virtual void on_remove_VIP(std::string name) {
+        std::cout << "Removing VIP (" << name << ") from virtual server (" << this->GetName() << ")" << std::endl;
+    }
 };
 
 // Callbacks for creating and deleting servers

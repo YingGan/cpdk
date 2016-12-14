@@ -37,6 +37,11 @@ class CPDKModel(object):
 
         # Get all the attributes
         for column in self.__class__.__table__.columns:
+
+            # If the column has a foreign key, skip it.
+            if column.foreign_keys:
+                continue
+
             data[column.name] = getattr(self, column.name)
 
         # Get any relations

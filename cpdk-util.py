@@ -99,6 +99,10 @@ def build_cpp():
         # Construct the individual field accessor virtual function declarations
         for column in models[model].__table__.columns:
 
+            # If the column contains a foreign key, or has one of the reserved names, skip it
+            if column.foreign_keys or column.name in ['name', 'id']:
+                continue
+
             this_field = 'virtual void on_%s(%s val) { }\n'
             if type(column.type) is sqlalchemy.types.Boolean:
                 field_code += this_field % (column.name, 'bool')
@@ -115,9 +119,17 @@ def build_cpp():
 
         # Construct the calling of the individual field accessor virtuals during a modify
         field_code = ''
+        if_written = False
         for x, column in enumerate(models[model].__table__.columns):
-            if x > 0:
+
+            # If the column contains a foreign key, or has one of the reserved names, skip it
+            if column.foreign_keys or column.name in ['name', 'id']:
+                continue
+
+            if if_written:
                 field_code += 'else '
+            else:
+                if_written = True
 
             field_code += 'if(field == "%s") {\n' % column.name
             if type(column.type) is sqlalchemy.types.Boolean:

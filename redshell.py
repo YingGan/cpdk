@@ -235,7 +235,7 @@ class CLIParseField(object):
             output += '    def do_%s(self, arg):\n' % self.name
             output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": True})\n' % (self.parent_cmd.name, self.name)
             output += '        s = Global.zmq_socket.recv_json()\n'
-            output += '        if s["status"] != "ok":\n';
+            output += '        if s["status"] != "ok":\n'
             output += '            print s["status"]\n'
             output += '\n'
 
@@ -246,7 +246,7 @@ class CLIParseField(object):
                 output += '    def do_no_%s(self, arg):\n' % self.name
             output += '        Global.zmq_socket.send_json({"t": "modify", "o": "%s", "on": self.name, "f": "%s", "fv": False})\n' % (self.parent_cmd.name, self.name)
             output += '        s = Global.zmq_socket.recv_json()\n'
-            output += '        if s["status"] != "ok":\n';
+            output += '        if s["status"] != "ok":\n'
             output += '            print s["status"]\n'
         else:
 
@@ -304,16 +304,19 @@ def build_cli_recurse(parent_dir, parent_mode):
                     new_cmd = CLIParseCmd(name, o)
                     parent_mode.add_child_command(new_cmd)
 
-                    # Import all the database attributes
-                    for member_name, member_object in inspect.getmembers(o):
+                    for a in sql_inspect(o).mapper.column_attrs:
 
-                        # Never import a member named "id" or "name" as that's an internal-only attribute
-                        if type(member_object) == InstrumentedAttribute and member_name != 'id' and member_name != 'name':
-                            if member_name in o.__table__.columns:
-                                obj_type = getattr(o.__table__.columns, member_name).type
-                                field = CLIParseField(name=member_name, parent_cmd=new_cmd,
-                                                      column=member_object, obj_type=type(obj_type))
-                                new_cmd.add_field(field)
+                        # Don't create commands for 'id' or 'name' fields
+                        if a.key in ['id', 'name']:
+                            continue
+
+                        # If this column has foreign keys, skip it
+                        if a.columns[0].foreign_keys:
+                            continue
+                        else:
+                            field = CLIParseField(name=a.key, parent_cmd=new_cmd,
+                                                  column=a.columns[0], obj_type=type(a.columns[0].type))
+                            new_cmd.add_field(field)
 
         elif os.path.isdir(full_path):
             # Create a new mode object, add it to the parents object list, and recurse into it
@@ -338,6 +341,17 @@ class BaseCmd(cmd.Cmd):
 
     def do_exit(self, _):
         return True
+
+    def default_show(self, data):
+        output = ''
+        for key in data.keys():
+
+            # Don't print object name or IDs
+            if key == 'name' or key == 'id':
+                continue
+
+            output += "%s: %s\\n" % (key, data[key])
+        return output
 
 '''
 
@@ -365,8 +379,8 @@ class BaseCmd(cmd.Cmd):
         base_def += '                print reply["message"]\n'
         base_def += '                return\n'
         base_def += '            for r in reply["result"]:\n'
-        # Instantiate a temporary instance of the model and print its contents
-        base_def += '                print str(Global.models["%s"].__class__(**r))\n' % command.name
+        base_def += '                m = getattr(Global.models["%s"], "show", None)\n' % command.name
+        base_def += '                print m(r) if m else self.default_show(r)\n'
         base_def += '\n'
 
     # Walk through the command tree and create global 'delete' commands for each CLI command

@@ -52,21 +52,53 @@ class RedShellTest(TestCase):
         c.expect('virtual-Vippy>')
         c.sendline('port 1234')
         c.expect('virtual-Vippy>')
-        c.sendline('address 1.1.1.1')
-        c.expect('virtual-Vippy>')
         c.sendline('exit')
         c.expect('Global>')
         c.sendline('show virtual Vippy')
         c.expect('Global>')
 
         # Make sure the appropriate fields are present
-        self.assertIn('Address: 1.1.1.1', c.before)
         self.assertIn('Port: 1234', c.before)
         self.assertIn('Enabled: False', c.before)
         self.assertIn('Virtual Server: Vippy', c.before)
         c.sendline('exit')
         c.close()
 
+    def test_vip_to_virtual_server(self):
+        """
+        Verify that you can add and remove VIP from a virtual server
+        :return:
+        """
+        c = pexpect.spawn('python redshell.py --settings examples.basic.settings')
+        c.logfile = sys.stdout
+        c.expect('Global>')
+        c.sendline('vip myvip')
+        c.expect('vip-myvip>')
+        c.sendline('address 1.1.1.1')
+        c.expect('vip-myvip>')
+        c.sendline('exit')
+        c.expect('Global>')
+        c.sendline('virtual vs')
+        c.expect('virtual-vs>')
+        c.sendline('add VIP myvip')
+        c.expect('virtual-vs>')
 
+        # Validate the VIP is in the virtual's list
+        c.sendline('show virtual vs')
+        c.expect('virtual-vs>')
+        self.assertIn('myvip', c.before)
 
+        # Remove the VIP and validate it's no longer in the list
+        c.sendline('remove VIP myvip')
+        c.expect('virtual-vs>')
+        c.sendline('show virtual vs')
+        c.expect('virtual-vs>')
+        self.assertNotIn('myvip', c.before)
+
+        c.sendline('exit')
+        c.expect('Global>')
+        c.sendline('show virtual vs')
+        c.expect('Global>')
+        c.sendline('exit')
+        c.close()
 

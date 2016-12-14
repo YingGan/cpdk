@@ -232,7 +232,6 @@ def process_config_msg(msg, zmq_pub_socket):
             ref_model = user_models[msg['f']]
             try:
                 q_ref_obj = session.query(ref_model.__class__).filter(ref_model.__class__.name == msg['fv']).one()
-
                 getattr(q_result, msg['rv']).append(q_ref_obj)
                 session.commit()
 

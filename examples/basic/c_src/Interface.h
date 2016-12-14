@@ -27,9 +27,7 @@ public:
 
     
 
-    virtual void on_id(int val) { }
-virtual void on_name(std::string val) { }
-virtual void on_enabled(bool val) { }
+    virtual void on_enabled(bool val) { }
 virtual void on_packets_out(uint64_t val) { }
 virtual void on_packets_in(uint64_t val) { }
 
@@ -133,11 +131,7 @@ void InterfaceMgr::Init(Interface_Create create_cb, Interface_Delete delete_cb, 
 
             if(value.is_null())
                 continue;
-if(field == "id") {
-    pObj->on_id(value);
-} else if(field == "name") {
-    pObj->on_name(value);
-} else if(field == "enabled") {
+if(field == "enabled") {
     pObj->on_enabled(value);
 } else if(field == "packets_out") {
     pObj->on_packets_out(value);
@@ -286,11 +280,7 @@ void InterfaceMgr::ProcessMessageQueue(void) {
             std::string field = data["field"];
             auto value = data["value"];
 
-if(field == "id") {
-    pObj->on_id(value);
-} else if(field == "name") {
-    pObj->on_name(value);
-} else if(field == "enabled") {
+if(field == "enabled") {
     pObj->on_enabled(value);
 } else if(field == "packets_out") {
     pObj->on_packets_out(value);
